@@ -1,15 +1,19 @@
 {
   "manifest_version": 3,
   "name": "Đọc truyện Speech",
-  "version": "1.1",
+  "version": "1.2",
   "description": "Trích xuất và đọc nội dung truyện từ truyenfull.vision",
   "permissions": [
     "activeTab",
-    "scripting"
+    "scripting",
+    "tts"
   ],
   "host_permissions": [
     "https://truyenfull.vision/*"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_icon": {
       "16": "icons/icon16.png",

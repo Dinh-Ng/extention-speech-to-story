@@ -1,10 +1,10 @@
 // content.js — Floating TTS controls injected into truyenfull.vision pages
+// Uses chrome.tts via message passing to background.js
 (function () {
   'use strict';
 
   // ---- State ----
   let currentText = '';
-  let utterance = null;
   let isSpeaking = false;
   let isPaused = false;
 
@@ -67,38 +67,16 @@
     }
   }
 
-  // ---- TTS ----
+  // ---- TTS via chrome.tts (background) ----
   function speakText(els) {
     if (!currentText) return;
-    window.speechSynthesis.cancel();
 
-    utterance = new SpeechSynthesisUtterance(currentText);
-    utterance.lang = 'vi-VN';
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-
-    utterance.onstart = () => {
-      isSpeaking = true;
-      isPaused = false;
-      updateButtons(els);
-      els.status.textContent = 'Đang đọc...';
-    };
-
-    utterance.onend = () => {
-      isSpeaking = false;
-      isPaused = false;
-      updateButtons(els);
-      els.status.textContent = 'Đã đọc xong.';
-    };
-
-    utterance.onerror = () => {
-      isSpeaking = false;
-      isPaused = false;
-      updateButtons(els);
-      els.status.textContent = 'Lỗi đọc.';
-    };
-
-    window.speechSynthesis.speak(utterance);
+    chrome.runtime.sendMessage({
+      action: 'tts-speak',
+      text: currentText,
+      rate: 1.0,
+      pitch: 1.0
+    });
   }
 
   function updateButtons(els) {
@@ -107,11 +85,54 @@
     els.stopBtn.disabled = !isSpeaking;
   }
 
+  // ---- Listen for TTS events from background ----
+  chrome.runtime.onMessage.addListener((message) => {
+    if (message.action !== 'tts-event') return;
+
+    switch (message.type) {
+      case 'start':
+        isSpeaking = true;
+        isPaused = false;
+        updateButtons(els);
+        els.status.textContent = 'Đang đọc...';
+        break;
+
+      case 'end':
+        isSpeaking = false;
+        isPaused = false;
+        updateButtons(els);
+        els.status.textContent = 'Đã đọc xong.';
+        break;
+
+      case 'pause':
+        isPaused = true;
+        updateButtons(els);
+        els.status.textContent = 'Tạm dừng.';
+        break;
+
+      case 'resume':
+        isPaused = false;
+        updateButtons(els);
+        els.status.textContent = 'Đang đọc...';
+        break;
+
+      case 'error':
+      case 'cancelled':
+        isSpeaking = false;
+        isPaused = false;
+        updateButtons(els);
+        if (message.type === 'error') {
+          els.status.textContent = 'Lỗi đọc.';
+        }
+        break;
+    }
+  });
+
   // ---- Event listeners ----
   function attachEvents(els) {
     els.speakBtn.addEventListener('click', () => {
       if (isPaused) {
-        window.speechSynthesis.resume();
+        chrome.runtime.sendMessage({ action: 'tts-resume' });
         isPaused = false;
         isSpeaking = true;
         els.status.textContent = 'Đang đọc...';
@@ -123,7 +144,7 @@
 
     els.pauseBtn.addEventListener('click', () => {
       if (isSpeaking && !isPaused) {
-        window.speechSynthesis.pause();
+        chrome.runtime.sendMessage({ action: 'tts-pause' });
         isPaused = true;
         els.status.textContent = 'Tạm dừng.';
         updateButtons(els);
@@ -132,7 +153,7 @@
 
     els.stopBtn.addEventListener('click', () => {
       if (isSpeaking) {
-        window.speechSynthesis.cancel();
+        chrome.runtime.sendMessage({ action: 'tts-stop' });
         isSpeaking = false;
         isPaused = false;
         els.status.textContent = 'Đã dừng.';
@@ -141,7 +162,7 @@
     });
 
     els.reloadBtn.addEventListener('click', () => {
-      window.speechSynthesis.cancel();
+      chrome.runtime.sendMessage({ action: 'tts-stop' });
       isSpeaking = false;
       isPaused = false;
       updateButtons(els);
