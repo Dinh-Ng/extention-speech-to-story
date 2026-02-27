@@ -1,0 +1,100 @@
+/* ===== Floating TTS Controls ===== */
+
+#sts-floating-container {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 2147483647;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+/* --- Buttons row --- */
+#sts-floating-container .sts-btn-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#sts-floating-container .sts-btn {
+  width: 46px;
+  height: 46px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  position: relative;
+}
+
+#sts-floating-container .sts-btn:hover:not(:disabled) {
+  transform: scale(1.12);
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.3);
+}
+
+#sts-floating-container .sts-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+#sts-floating-container .sts-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Individual button colours */
+#sts-btn-speak {
+  background: linear-gradient(135deg, #43b581, #2d8f63);
+}
+
+#sts-btn-pause {
+  background: linear-gradient(135deg, #faa61a, #e08f0f);
+}
+
+#sts-btn-stop {
+  background: linear-gradient(135deg, #f04747, #c63737);
+}
+
+#sts-btn-reload {
+  background: linear-gradient(135deg, #7289da, #5b6eae);
+}
+
+/* --- Tooltip --- */
+#sts-floating-container .sts-btn::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+#sts-floating-container .sts-btn:hover::after {
+  opacity: 1;
+}
+
+/* --- Status label --- */
+#sts-status {
+  font-size: 11px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 3px 10px;
+  border-radius: 10px;
+  white-space: nowrap;
+  pointer-events: none;
+}
