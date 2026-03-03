@@ -2,10 +2,11 @@
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   switch (request.action) {
-    case 'tts-speak':
+    case 'tts-speak': {
       // Stop any current speech first
       chrome.tts.stop();
-      chrome.tts.speak(request.text, {
+
+      const options = {
         lang: 'vi-VN',
         rate: request.rate || 1.0,
         pitch: request.pitch || 1.0,
@@ -20,9 +21,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             });
           }
         }
-      });
+      };
+
+      // Use specific voice if provided
+      if (request.voiceName) {
+        options.voiceName = request.voiceName;
+      }
+
+      chrome.tts.speak(request.text, options);
       sendResponse({ success: true });
       break;
+    }
 
     case 'tts-pause':
       chrome.tts.pause();
@@ -38,6 +47,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       chrome.tts.stop();
       sendResponse({ success: true });
       break;
+
+    case 'tts-getVoices':
+      chrome.tts.getVoices((voices) => {
+        const viVoices = (voices || []).filter(v => v.lang && v.lang.toLowerCase().startsWith('vi'));
+        sendResponse({ voices: viVoices });
+      });
+      return true; // Keep channel open for async getVoices callback
 
     default:
       sendResponse({ success: false, error: 'Unknown action' });
