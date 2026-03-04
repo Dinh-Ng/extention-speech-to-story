@@ -1,5 +1,6 @@
 // content.js — Floating TTS controls + settings panel
 // Uses chrome.tts via message passing to background.js
+// Supports Gemini TTS via Google AI Studio API
 (function () {
   'use strict';
 
@@ -9,12 +10,35 @@
   let isPaused = false;
   let settingsOpen = false;
 
+  // Gemini audio playback state
+  let audioContext = null;
+  let currentSource = null;
+  let audioQueue = [];
+  let isPlayingGemini = false;
+  let geminiStopped = false;
+  let pauseTime = 0;
+  let pauseOffset = 0;
+  let currentBuffer = null;
+
   // Default settings
   let ttsSettings = {
     rate: 1.0,
     pitch: 1.0,
-    voiceName: '' // empty = system default
+    voiceName: '', // empty = system default
+    engine: 'chrome', // 'chrome' | 'gemini'
+    geminiApiKey: '',
+    geminiVoice: 'Kore'
   };
+
+  // Gemini voice list
+  const GEMINI_VOICES = [
+    'Zephyr', 'Puck', 'Charon', 'Kore', 'Fenrir',
+    'Aoede', 'Leda', 'Orus', 'Perseus', 'Iapetus',
+    'Altair', 'Autonoe', 'Callirrhoe', 'Dorus', 'Erinome',
+    'Gacrux', 'Helios', 'Io', 'Janus', 'Keid',
+    'Laomedeia', 'Maia', 'Narvi', 'Oberon', 'Pandora',
+    'Quasar', 'Rastaban', 'Sadachbia', 'Talos', 'Umbriel'
+  ];
 
   // ---- Load saved settings ----
   function loadSettings(callback) {
@@ -28,6 +52,107 @@
 
   function saveSettings() {
     chrome.storage.local.set({ ttsSettings });
+  }
+
+  // ---- Gemini Audio Playback ----
+  function getAudioContext() {
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+    }
+    return audioContext;
+  }
+
+  function playBase64Pcm(base64Data) {
+    return new Promise((resolve, reject) => {
+      if (geminiStopped) { resolve(); return; }
+
+      try {
+        const ctx = getAudioContext();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        const binaryStr = atob(base64Data);
+        const len = binaryStr.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+
+        // Convert s16le PCM to Float32 for Web Audio
+        const int16 = new Int16Array(bytes.buffer);
+        const float32 = new Float32Array(int16.length);
+        for (let i = 0; i < int16.length; i++) {
+          float32[i] = int16[i] / 32768.0;
+        }
+
+        const audioBuffer = ctx.createBuffer(1, float32.length, 24000);
+        audioBuffer.getChannelData(0).set(float32);
+
+        currentBuffer = audioBuffer;
+        const source = ctx.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(ctx.destination);
+        currentSource = source;
+        pauseOffset = 0;
+
+        source.onended = () => {
+          currentSource = null;
+          currentBuffer = null;
+          resolve();
+        };
+
+        source.start(0);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  async function processAudioQueue() {
+    if (isPlayingGemini) return;
+    isPlayingGemini = true;
+
+    while (audioQueue.length > 0 && !geminiStopped) {
+      const chunk = audioQueue.shift();
+      await playBase64Pcm(chunk.audioData);
+    }
+
+    isPlayingGemini = false;
+
+    // If not stopped, playback ended naturally
+    if (!geminiStopped && ttsSettings.engine === 'gemini') {
+      isSpeaking = false;
+      isPaused = false;
+      if (els) {
+        updateButtons(els);
+        els.status.textContent = 'Đã đọc xong.';
+      }
+    }
+  }
+
+  function stopGeminiPlayback() {
+    geminiStopped = true;
+    audioQueue = [];
+    if (currentSource) {
+      try { currentSource.stop(); } catch (e) { /* ignore */ }
+      currentSource = null;
+    }
+    currentBuffer = null;
+    isPlayingGemini = false;
+  }
+
+  function pauseGeminiPlayback() {
+    const ctx = getAudioContext();
+    if (ctx.state === 'running') {
+      pauseTime = ctx.currentTime;
+      ctx.suspend();
+    }
+  }
+
+  function resumeGeminiPlayback() {
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
   }
 
   // ---- Build UI ----
@@ -81,33 +206,59 @@
     title.className = 'sts-panel-title';
     title.textContent = '⚙ Cài đặt giọng đọc';
 
+    // ---- Engine Toggle ----
+    const engineRow = document.createElement('div');
+    engineRow.className = 'sts-setting-row';
+    const engineLabel = document.createElement('div');
+    engineLabel.className = 'sts-setting-label';
+    engineLabel.innerHTML = '<span>Công cụ đọc</span>';
+
+    const toggleWrap = document.createElement('div');
+    toggleWrap.className = 'sts-engine-toggle';
+
+    const chromeLabel = document.createElement('span');
+    chromeLabel.textContent = 'Chrome';
+    chromeLabel.className = 'sts-toggle-label' + (ttsSettings.engine === 'chrome' ? ' sts-toggle-active' : '');
+    chromeLabel.id = 'sts-label-chrome';
+
+    const toggleSwitch = document.createElement('label');
+    toggleSwitch.className = 'sts-switch';
+    const toggleInput = document.createElement('input');
+    toggleInput.type = 'checkbox';
+    toggleInput.id = 'sts-engine-switch';
+    toggleInput.checked = ttsSettings.engine === 'gemini';
+    const slider = document.createElement('span');
+    slider.className = 'sts-slider';
+    toggleSwitch.append(toggleInput, slider);
+
+    const geminiLabel = document.createElement('span');
+    geminiLabel.textContent = 'Gemini';
+    geminiLabel.className = 'sts-toggle-label' + (ttsSettings.engine === 'gemini' ? ' sts-toggle-active' : '');
+    geminiLabel.id = 'sts-label-gemini';
+
+    toggleWrap.append(chromeLabel, toggleSwitch, geminiLabel);
+    engineRow.append(engineLabel, toggleWrap);
+
+    // ---- Chrome TTS Section ----
+    const chromeSection = document.createElement('div');
+    chromeSection.id = 'sts-chrome-section';
+    chromeSection.style.display = ttsSettings.engine === 'chrome' ? 'block' : 'none';
+
     // Rate slider
     const rateRow = createSliderRow(
-      'Tốc độ đọc',
-      'sts-rate-slider',
-      'sts-rate-value',
-      0.5, 3.0, 0.1,
-      ttsSettings.rate,
-      (val) => {
-        ttsSettings.rate = val;
-        saveSettings();
-      }
+      'Tốc độ đọc', 'sts-rate-slider', 'sts-rate-value',
+      0.5, 3.0, 0.1, ttsSettings.rate,
+      (val) => { ttsSettings.rate = val; saveSettings(); }
     );
 
     // Pitch slider
     const pitchRow = createSliderRow(
-      'Tông giọng',
-      'sts-pitch-slider',
-      'sts-pitch-value',
-      0.0, 2.0, 0.1,
-      ttsSettings.pitch,
-      (val) => {
-        ttsSettings.pitch = val;
-        saveSettings();
-      }
+      'Tông giọng', 'sts-pitch-slider', 'sts-pitch-value',
+      0.0, 2.0, 0.1, ttsSettings.pitch,
+      (val) => { ttsSettings.pitch = val; saveSettings(); }
     );
 
-    // Voice selector
+    // Voice selector (Chrome)
     const voiceRow = document.createElement('div');
     voiceRow.className = 'sts-setting-row';
     const voiceLabel = document.createElement('div');
@@ -125,7 +276,80 @@
     });
     voiceRow.append(voiceLabel, voiceSelect);
 
-    panel.append(title, rateRow, pitchRow, voiceRow);
+    chromeSection.append(rateRow, pitchRow, voiceRow);
+
+    // ---- Gemini Section ----
+    const geminiSection = document.createElement('div');
+    geminiSection.id = 'sts-gemini-section';
+    geminiSection.style.display = ttsSettings.engine === 'gemini' ? 'block' : 'none';
+
+    // API Key input
+    const apiKeyRow = document.createElement('div');
+    apiKeyRow.className = 'sts-setting-row';
+    const apiKeyLabel = document.createElement('div');
+    apiKeyLabel.className = 'sts-setting-label';
+    apiKeyLabel.innerHTML = '<span>API Key</span>';
+    const apiKeyInput = document.createElement('input');
+    apiKeyInput.type = 'password';
+    apiKeyInput.id = 'sts-gemini-apikey';
+    apiKeyInput.className = 'sts-text-input';
+    apiKeyInput.placeholder = 'Nhập Google AI Studio API Key';
+    apiKeyInput.value = ttsSettings.geminiApiKey || '';
+    apiKeyInput.addEventListener('change', () => {
+      ttsSettings.geminiApiKey = apiKeyInput.value.trim();
+      saveSettings();
+    });
+
+    // Show/hide toggle for API key
+    const apiKeyWrap = document.createElement('div');
+    apiKeyWrap.className = 'sts-apikey-wrap';
+    const toggleVis = document.createElement('button');
+    toggleVis.className = 'sts-apikey-toggle';
+    toggleVis.textContent = '👁';
+    toggleVis.type = 'button';
+    toggleVis.addEventListener('click', () => {
+      apiKeyInput.type = apiKeyInput.type === 'password' ? 'text' : 'password';
+    });
+    apiKeyWrap.append(apiKeyInput, toggleVis);
+    apiKeyRow.append(apiKeyLabel, apiKeyWrap);
+
+    // Gemini voice selector
+    const geminiVoiceRow = document.createElement('div');
+    geminiVoiceRow.className = 'sts-setting-row';
+    const geminiVoiceLabel = document.createElement('div');
+    geminiVoiceLabel.className = 'sts-setting-label';
+    geminiVoiceLabel.innerHTML = '<span>Giọng Gemini</span>';
+    const geminiVoiceSelect = document.createElement('select');
+    geminiVoiceSelect.id = 'sts-gemini-voice-select';
+    GEMINI_VOICES.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = v;
+      if (v === ttsSettings.geminiVoice) opt.selected = true;
+      geminiVoiceSelect.appendChild(opt);
+    });
+    geminiVoiceSelect.addEventListener('change', () => {
+      ttsSettings.geminiVoice = geminiVoiceSelect.value;
+      saveSettings();
+    });
+    geminiVoiceRow.append(geminiVoiceLabel, geminiVoiceSelect);
+
+    geminiSection.append(apiKeyRow, geminiVoiceRow);
+
+    // ---- Toggle engine event ----
+    toggleInput.addEventListener('change', () => {
+      const isGemini = toggleInput.checked;
+      ttsSettings.engine = isGemini ? 'gemini' : 'chrome';
+      saveSettings();
+
+      chromeSection.style.display = isGemini ? 'none' : 'block';
+      geminiSection.style.display = isGemini ? 'block' : 'none';
+
+      document.getElementById('sts-label-chrome').classList.toggle('sts-toggle-active', !isGemini);
+      document.getElementById('sts-label-gemini').classList.toggle('sts-toggle-active', isGemini);
+    });
+
+    panel.append(title, engineRow, chromeSection, geminiSection);
 
     // Load voices from background
     loadVoices(voiceSelect);
@@ -202,12 +426,46 @@
   function speakText() {
     if (!currentText) return;
 
+    if (ttsSettings.engine === 'gemini') {
+      speakWithGemini();
+    } else {
+      speakWithChrome();
+    }
+  }
+
+  function speakWithChrome() {
     chrome.runtime.sendMessage({
       action: 'tts-speak',
       text: currentText,
       rate: ttsSettings.rate,
       pitch: ttsSettings.pitch,
       voiceName: ttsSettings.voiceName
+    });
+  }
+
+  function speakWithGemini() {
+    if (!ttsSettings.geminiApiKey) {
+      if (els) els.status.textContent = 'Vui lòng nhập API Key trong cài đặt.';
+      return;
+    }
+
+    // Reset Gemini playback state
+    geminiStopped = false;
+    audioQueue = [];
+    isPlayingGemini = false;
+
+    isSpeaking = true;
+    isPaused = false;
+    if (els) {
+      updateButtons(els);
+      els.status.textContent = 'Đang tạo audio từ Gemini...';
+    }
+
+    chrome.runtime.sendMessage({
+      action: 'gemini-tts-speak',
+      text: currentText,
+      apiKey: ttsSettings.geminiApiKey,
+      geminiVoice: ttsSettings.geminiVoice
     });
   }
 
@@ -221,14 +479,29 @@
   let els; // declared here so the listener can access it
 
   chrome.runtime.onMessage.addListener((message) => {
-    if (message.action !== 'tts-event' || !els) return;
+    if (!els) return;
+
+    // Handle Gemini audio chunks
+    if (message.action === 'gemini-audio-chunk') {
+      audioQueue.push(message);
+      if (!isPlayingGemini && !geminiStopped) {
+        processAudioQueue();
+      }
+      return;
+    }
+
+    if (message.action !== 'tts-event') return;
 
     switch (message.type) {
       case 'start':
         isSpeaking = true;
         isPaused = false;
         updateButtons(els);
-        els.status.textContent = 'Đang đọc...';
+        if (ttsSettings.engine === 'gemini') {
+          els.status.textContent = 'Đang đọc (Gemini)...';
+        } else {
+          els.status.textContent = 'Đang đọc...';
+        }
         break;
 
       case 'end':
@@ -256,7 +529,7 @@
         isPaused = false;
         updateButtons(els);
         if (message.type === 'error') {
-          els.status.textContent = 'Lỗi đọc.';
+          els.status.textContent = 'Lỗi: ' + (message.error || 'Lỗi đọc.');
         }
         break;
     }
@@ -266,11 +539,19 @@
   function attachEvents(els) {
     els.speakBtn.addEventListener('click', () => {
       if (isPaused) {
-        chrome.runtime.sendMessage({ action: 'tts-resume' });
-        isPaused = false;
-        isSpeaking = true;
-        els.status.textContent = 'Đang đọc...';
-        updateButtons(els);
+        if (ttsSettings.engine === 'gemini') {
+          resumeGeminiPlayback();
+          isPaused = false;
+          isSpeaking = true;
+          els.status.textContent = 'Đang đọc (Gemini)...';
+          updateButtons(els);
+        } else {
+          chrome.runtime.sendMessage({ action: 'tts-resume' });
+          isPaused = false;
+          isSpeaking = true;
+          els.status.textContent = 'Đang đọc...';
+          updateButtons(els);
+        }
       } else {
         speakText();
       }
@@ -278,7 +559,11 @@
 
     els.pauseBtn.addEventListener('click', () => {
       if (isSpeaking && !isPaused) {
-        chrome.runtime.sendMessage({ action: 'tts-pause' });
+        if (ttsSettings.engine === 'gemini') {
+          pauseGeminiPlayback();
+        } else {
+          chrome.runtime.sendMessage({ action: 'tts-pause' });
+        }
         isPaused = true;
         els.status.textContent = 'Tạm dừng.';
         updateButtons(els);
@@ -287,6 +572,9 @@
 
     els.stopBtn.addEventListener('click', () => {
       if (isSpeaking) {
+        if (ttsSettings.engine === 'gemini') {
+          stopGeminiPlayback();
+        }
         chrome.runtime.sendMessage({ action: 'tts-stop' });
         isSpeaking = false;
         isPaused = false;
@@ -296,6 +584,9 @@
     });
 
     els.reloadBtn.addEventListener('click', () => {
+      if (ttsSettings.engine === 'gemini') {
+        stopGeminiPlayback();
+      }
       chrome.runtime.sendMessage({ action: 'tts-stop' });
       isSpeaking = false;
       isPaused = false;
@@ -329,6 +620,7 @@
     const pitchSlider = document.getElementById('sts-pitch-slider');
     const pitchValue = document.getElementById('sts-pitch-value');
     const voiceSelect = document.getElementById('sts-voice-select');
+    const engineSwitch = document.getElementById('sts-engine-switch');
 
     if (rateSlider) {
       rateSlider.value = ttsSettings.rate;
@@ -340,6 +632,9 @@
     }
     if (voiceSelect) {
       voiceSelect.value = ttsSettings.voiceName;
+    }
+    if (engineSwitch) {
+      engineSwitch.checked = ttsSettings.engine === 'gemini';
     }
   }
 
