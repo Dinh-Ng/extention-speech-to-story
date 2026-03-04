@@ -8,21 +8,17 @@ async function geminiTtsSpeak(text, apiKey, voiceName, tabId) {
   // Notify content script that speech started
   notifyTab(tabId, 'start');
 
-  try {
-    for (let i = 0; i < chunks.length; i++) {
-      const audioBase64 = await callGeminiTts(chunks[i], apiKey, voiceName);
+  for (let i = 0; i < chunks.length; i++) {
+    const audioBase64 = await callGeminiTts(chunks[i], apiKey, voiceName);
 
-      // Send audio chunk to content script for playback
-      await chrome.tabs.sendMessage(tabId, {
-        action: 'gemini-audio-chunk',
-        audioData: audioBase64,
-        chunkIndex: i,
-        totalChunks: chunks.length,
-        isLast: i === chunks.length - 1
-      });
-    }
-  } catch (error) {
-    notifyTab(tabId, 'error', error.message);
+    // Send audio chunk to content script for playback
+    await chrome.tabs.sendMessage(tabId, {
+      action: 'gemini-audio-chunk',
+      audioData: audioBase64,
+      chunkIndex: i,
+      totalChunks: chunks.length,
+      isLast: i === chunks.length - 1
+    });
   }
 }
 
@@ -161,10 +157,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         break;
       }
 
-      // Run async Gemini TTS
-      geminiTtsSpeak(request.text, request.apiKey, request.geminiVoice, tabId);
-      sendResponse({ success: true });
-      break;
+      // IMPORTANT: Do NOT call sendResponse synchronously here!
+      // In MV3, calling sendResponse closes the message channel and allows
+      // the service worker to terminate. We must keep it alive by deferring
+      // sendResponse until all async API calls are complete.
+      geminiTtsSpeak(request.text, request.apiKey, request.geminiVoice, tabId)
+        .then(() => {
+          sendResponse({ success: true });
+        })
+        .catch((err) => {
+          notifyTab(tabId, 'error', err.message);
+          sendResponse({ success: false, error: err.message });
+        });
+
+      return true; // Keep channel open — critical for MV3 service worker!
     }
 
     default:

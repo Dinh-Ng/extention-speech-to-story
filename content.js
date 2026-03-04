@@ -466,6 +466,16 @@
       text: currentText,
       apiKey: ttsSettings.geminiApiKey,
       geminiVoice: ttsSettings.geminiVoice
+    }, (response) => {
+      // This callback fires after ALL API chunks are done (or on error)
+      if (response && !response.success && response.error) {
+        isSpeaking = false;
+        isPaused = false;
+        if (els) {
+          updateButtons(els);
+          els.status.textContent = 'Lỗi: ' + response.error;
+        }
+      }
     });
   }
 
