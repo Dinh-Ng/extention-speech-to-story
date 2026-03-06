@@ -5,10 +5,22 @@ async function geminiTtsSpeak(text, apiKey, voiceName, tabId) {
   const CHUNK_SIZE = 4000; // characters per chunk (safe under 32k token limit)
   const chunks = splitTextIntoChunks(text, CHUNK_SIZE);
 
-  // Notify content script that speech started
-  notifyTab(tabId, 'start');
+  // Notify content script: total chunks count + speech started
+  await chrome.tabs.sendMessage(tabId, {
+    action: 'gemini-start',
+    totalChunks: chunks.length,
+    totalChars: text.length
+  }).catch(() => {});
 
   for (let i = 0; i < chunks.length; i++) {
+    // Notify progress before fetching
+    await chrome.tabs.sendMessage(tabId, {
+      action: 'gemini-progress',
+      chunkIndex: i,
+      totalChunks: chunks.length,
+      phase: 'fetching'
+    }).catch(() => {});
+
     const audioBase64 = await callGeminiTts(chunks[i], apiKey, voiceName);
 
     // Send audio chunk to content script for playback
@@ -18,7 +30,7 @@ async function geminiTtsSpeak(text, apiKey, voiceName, tabId) {
       chunkIndex: i,
       totalChunks: chunks.length,
       isLast: i === chunks.length - 1
-    });
+    }).catch(() => {});
   }
 }
 
@@ -68,8 +80,11 @@ function splitTextIntoChunks(text, maxLen) {
       chunks.push(remaining);
       break;
     }
-    // Try to split at sentence boundary
-    let splitAt = remaining.lastIndexOf('. ', maxLen);
+    // Try to split at sentence boundary (Vietnamese uses '. ' or newlines)
+    let splitAt = remaining.lastIndexOf('\n', maxLen);
+    if (splitAt < maxLen * 0.5) {
+      splitAt = remaining.lastIndexOf('. ', maxLen);
+    }
     if (splitAt < maxLen * 0.5) {
       splitAt = remaining.lastIndexOf(' ', maxLen);
     }
@@ -103,19 +118,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         rate: request.rate || 1.0,
         pitch: request.pitch || 1.0,
         onEvent: (event) => {
-          // Forward TTS events back to the content script
           if (sender.tab && sender.tab.id) {
             chrome.tabs.sendMessage(sender.tab.id, {
               action: 'tts-event',
               type: event.type
-            }).catch(() => {
-              // Tab may have been closed, ignore
-            });
+            }).catch(() => {});
           }
         }
       };
 
-      // Use specific voice if provided
       if (request.voiceName) {
         options.voiceName = request.voiceName;
       }
@@ -145,10 +156,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const viVoices = (voices || []).filter(v => v.lang && v.lang.toLowerCase().startsWith('vi'));
         sendResponse({ voices: viVoices });
       });
-      return true; // Keep channel open for async getVoices callback
+      return true;
 
     case 'gemini-tts-speak': {
-      // Stop chrome.tts if playing
       chrome.tts.stop();
 
       const tabId = sender.tab?.id;
@@ -157,10 +167,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         break;
       }
 
-      // IMPORTANT: Do NOT call sendResponse synchronously here!
-      // In MV3, calling sendResponse closes the message channel and allows
-      // the service worker to terminate. We must keep it alive by deferring
-      // sendResponse until all async API calls are complete.
       geminiTtsSpeak(request.text, request.apiKey, request.geminiVoice, tabId)
         .then(() => {
           sendResponse({ success: true });
@@ -170,12 +176,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse({ success: false, error: err.message });
         });
 
-      return true; // Keep channel open — critical for MV3 service worker!
+      return true; // Keep channel open for MV3 service worker
     }
 
     default:
       sendResponse({ success: false, error: 'Unknown action' });
   }
 
-  return true; // Keep channel open for async response
+  return true;
 });

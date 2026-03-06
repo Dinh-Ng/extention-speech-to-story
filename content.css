@@ -92,6 +92,53 @@
   opacity: 1;
 }
 
+/* --- Progress bar --- */
+#sts-progress-wrap {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  width: 46px;
+}
+
+#sts-progress-wrap {
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 6px;
+  height: 8px;
+  overflow: hidden;
+  position: relative;
+  width: 46px;
+}
+
+#sts-progress-bar {
+  height: 100%;
+  width: 0%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #4285f4, #34a853, #4285f4);
+  background-size: 200% 100%;
+  animation: sts-progress-shimmer 2s ease infinite;
+  transition: width 0.4s ease;
+  box-shadow: 0 0 8px rgba(66, 133, 244, 0.5);
+}
+
+@keyframes sts-progress-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+#sts-progress-text {
+  font-size: 10px;
+  color: #fff;
+  font-weight: 600;
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  line-height: 8px;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
 /* --- Status label --- */
 #sts-status {
   font-size: 11px;
@@ -102,6 +149,7 @@
   white-space: nowrap;
   pointer-events: none;
 }
+
 
 /* ===== Settings Panel ===== */
 #sts-settings-panel {

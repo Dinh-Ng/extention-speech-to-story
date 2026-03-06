@@ -20,6 +20,12 @@
   let pauseOffset = 0;
   let currentBuffer = null;
 
+  // Gemini progress tracking
+  let geminiTotalChunks = 0;
+  let geminiReceivedChunks = 0;
+  let geminiAllChunksReceived = false;
+  let geminiPlayedChunks = 0;
+
   // Default settings
   let ttsSettings = {
     rate: 1.0,
@@ -111,9 +117,26 @@
     if (isPlayingGemini) return;
     isPlayingGemini = true;
 
-    while (audioQueue.length > 0 && !geminiStopped) {
-      const chunk = audioQueue.shift();
-      await playBase64Pcm(chunk.audioData);
+    while (!geminiStopped) {
+      if (audioQueue.length > 0) {
+        const chunk = audioQueue.shift();
+        geminiPlayedChunks++;
+
+        // Update progress: playing chunk X/Y
+        if (els) {
+          const pct = Math.round((geminiPlayedChunks / geminiTotalChunks) * 100);
+          updateProgressBar(pct);
+          els.status.textContent = `Đang đọc phần ${geminiPlayedChunks}/${geminiTotalChunks}...`;
+        }
+
+        await playBase64Pcm(chunk.audioData);
+      } else if (geminiAllChunksReceived) {
+        // All chunks received and queue is empty → done
+        break;
+      } else {
+        // Queue temporarily empty, wait for next chunk from background
+        await new Promise(r => setTimeout(r, 200));
+      }
     }
 
     isPlayingGemini = false;
@@ -124,6 +147,8 @@
       isPaused = false;
       if (els) {
         updateButtons(els);
+        updateProgressBar(100);
+        setTimeout(() => hideProgressBar(), 1500);
         els.status.textContent = 'Đã đọc xong.';
       }
     }
@@ -132,12 +157,14 @@
   function stopGeminiPlayback() {
     geminiStopped = true;
     audioQueue = [];
+    geminiAllChunksReceived = true; // break the wait loop
     if (currentSource) {
       try { currentSource.stop(); } catch (e) { /* ignore */ }
       currentSource = null;
     }
     currentBuffer = null;
     isPlayingGemini = false;
+    hideProgressBar();
   }
 
   function pauseGeminiPlayback() {
@@ -153,6 +180,40 @@
     if (ctx.state === 'suspended') {
       ctx.resume();
     }
+  }
+
+  // ---- Progress Bar ----
+  function createProgressBar() {
+    const wrap = document.createElement('div');
+    wrap.id = 'sts-progress-wrap';
+
+    const bar = document.createElement('div');
+    bar.id = 'sts-progress-bar';
+
+    const text = document.createElement('span');
+    text.id = 'sts-progress-text';
+    text.textContent = '';
+
+    wrap.append(bar, text);
+    return wrap;
+  }
+
+  function updateProgressBar(pct) {
+    const wrap = document.getElementById('sts-progress-wrap');
+    const bar = document.getElementById('sts-progress-bar');
+    const text = document.getElementById('sts-progress-text');
+    if (!wrap || !bar) return;
+
+    wrap.style.display = 'flex';
+    bar.style.width = Math.min(100, Math.max(0, pct)) + '%';
+    if (text) {
+      text.textContent = `${Math.round(pct)}%`;
+    }
+  }
+
+  function hideProgressBar() {
+    const wrap = document.getElementById('sts-progress-wrap');
+    if (wrap) wrap.style.display = 'none';
   }
 
   // ---- Build UI ----
@@ -173,11 +234,13 @@
 
     btnRow.append(speakBtn, pauseBtn, stopBtn, reloadBtn, settingsBtn);
 
+    const progressBar = createProgressBar();
+
     const status = document.createElement('span');
     status.id = 'sts-status';
     status.textContent = 'Sẵn sàng';
 
-    container.append(btnRow, status);
+    container.append(btnRow, progressBar, status);
     document.body.appendChild(container);
 
     // Build settings panel
@@ -414,7 +477,8 @@
     }
     currentText = chapterDiv.innerText.trim();
     if (currentText) {
-      els.status.textContent = 'Đã tải nội dung.';
+      const charCount = currentText.length;
+      els.status.textContent = `Đã tải nội dung (${charCount.toLocaleString()} ký tự).`;
       els.speakBtn.disabled = false;
     } else {
       els.status.textContent = 'Nội dung trống.';
@@ -422,7 +486,7 @@
     }
   }
 
-  // ---- TTS via chrome.tts (background) ----
+  // ---- TTS dispatch ----
   function speakText() {
     if (!currentText) return;
 
@@ -453,12 +517,17 @@
     geminiStopped = false;
     audioQueue = [];
     isPlayingGemini = false;
+    geminiTotalChunks = 0;
+    geminiReceivedChunks = 0;
+    geminiAllChunksReceived = false;
+    geminiPlayedChunks = 0;
 
     isSpeaking = true;
     isPaused = false;
     if (els) {
       updateButtons(els);
-      els.status.textContent = 'Đang tạo audio từ Gemini...';
+      els.status.textContent = 'Đang kết nối Gemini...';
+      updateProgressBar(0);
     }
 
     chrome.runtime.sendMessage({
@@ -467,12 +536,12 @@
       apiKey: ttsSettings.geminiApiKey,
       geminiVoice: ttsSettings.geminiVoice
     }, (response) => {
-      // This callback fires after ALL API chunks are done (or on error)
       if (response && !response.success && response.error) {
         isSpeaking = false;
         isPaused = false;
         if (els) {
           updateButtons(els);
+          hideProgressBar();
           els.status.textContent = 'Lỗi: ' + response.error;
         }
       }
@@ -485,63 +554,103 @@
     els.stopBtn.disabled = !isSpeaking;
   }
 
-  // ---- Listen for TTS events from background ----
-  let els; // declared here so the listener can access it
+  // ---- Listen for messages from background ----
+  let els;
 
   chrome.runtime.onMessage.addListener((message) => {
     if (!els) return;
 
-    // Handle Gemini audio chunks
-    if (message.action === 'gemini-audio-chunk') {
-      audioQueue.push(message);
-      if (!isPlayingGemini && !geminiStopped) {
-        processAudioQueue();
-      }
-      return;
-    }
-
-    if (message.action !== 'tts-event') return;
-
-    switch (message.type) {
-      case 'start':
+    switch (message.action) {
+      // Gemini: session started, we know total chunks
+      case 'gemini-start':
+        geminiTotalChunks = message.totalChunks;
+        geminiReceivedChunks = 0;
+        geminiAllChunksReceived = false;
+        geminiPlayedChunks = 0;
         isSpeaking = true;
         isPaused = false;
         updateButtons(els);
-        if (ttsSettings.engine === 'gemini') {
-          els.status.textContent = 'Đang đọc (Gemini)...';
-        } else {
+        els.status.textContent = `Đang tạo audio (0/${geminiTotalChunks} phần)...`;
+        updateProgressBar(0);
+        break;
+
+      // Gemini: progress update (fetching chunk N)
+      case 'gemini-progress':
+        if (message.phase === 'fetching') {
+          const fetchPct = Math.round(((message.chunkIndex) / message.totalChunks) * 100);
+          els.status.textContent = `Đang tạo phần ${message.chunkIndex + 1}/${message.totalChunks}...`;
+          // Progress bar shows a blend of fetch progress and play progress
+          updateProgressBar(fetchPct);
+        }
+        break;
+
+      // Gemini: audio chunk received
+      case 'gemini-audio-chunk':
+        geminiReceivedChunks++;
+        if (message.isLast) {
+          geminiAllChunksReceived = true;
+        }
+
+        audioQueue.push(message);
+
+        // Start playing if not already
+        if (!isPlayingGemini && !geminiStopped) {
+          processAudioQueue();
+        }
+        break;
+
+      // Chrome TTS events
+      case 'tts-event':
+        // (keep existing event handler for chrome tts)
+        break;
+
+      default:
+        return;
+    }
+
+    // Handle tts-event separately (for chrome.tts)
+    if (message.action === 'tts-event') {
+      switch (message.type) {
+        case 'start':
+          isSpeaking = true;
+          isPaused = false;
+          updateButtons(els);
+          if (ttsSettings.engine === 'gemini') {
+            els.status.textContent = 'Đang đọc (Gemini)...';
+          } else {
+            els.status.textContent = 'Đang đọc...';
+          }
+          break;
+
+        case 'end':
+          isSpeaking = false;
+          isPaused = false;
+          updateButtons(els);
+          els.status.textContent = 'Đã đọc xong.';
+          break;
+
+        case 'pause':
+          isPaused = true;
+          updateButtons(els);
+          els.status.textContent = 'Tạm dừng.';
+          break;
+
+        case 'resume':
+          isPaused = false;
+          updateButtons(els);
           els.status.textContent = 'Đang đọc...';
-        }
-        break;
+          break;
 
-      case 'end':
-        isSpeaking = false;
-        isPaused = false;
-        updateButtons(els);
-        els.status.textContent = 'Đã đọc xong.';
-        break;
-
-      case 'pause':
-        isPaused = true;
-        updateButtons(els);
-        els.status.textContent = 'Tạm dừng.';
-        break;
-
-      case 'resume':
-        isPaused = false;
-        updateButtons(els);
-        els.status.textContent = 'Đang đọc...';
-        break;
-
-      case 'error':
-      case 'cancelled':
-        isSpeaking = false;
-        isPaused = false;
-        updateButtons(els);
-        if (message.type === 'error') {
-          els.status.textContent = 'Lỗi: ' + (message.error || 'Lỗi đọc.');
-        }
-        break;
+        case 'error':
+        case 'cancelled':
+          isSpeaking = false;
+          isPaused = false;
+          updateButtons(els);
+          if (message.type === 'error') {
+            els.status.textContent = 'Lỗi: ' + (message.error || 'Lỗi đọc.');
+          }
+          break;
+      }
     }
   });
 
