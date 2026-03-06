@@ -1,4 +1,4 @@
-// content.js — Floating TTS controls + settings panel
+// content.js — Unified TTS Control Card
 // Uses chrome.tts via message passing to background.js
 // Supports Gemini TTS via Google AI Studio API
 (function () {
@@ -17,10 +17,6 @@
   let isPlayingGemini = false;
   let geminiStopped = false;
   let pauseTime = 0;
-  let pauseOffset = 0;
-  let currentBuffer = null;
-
-  // Gemini progress tracking
   let geminiTotalChunks = 0;
   let geminiReceivedChunks = 0;
   let geminiAllChunksReceived = false;
@@ -30,13 +26,12 @@
   let ttsSettings = {
     rate: 1.0,
     pitch: 1.0,
-    voiceName: '', // empty = system default
-    engine: 'chrome', // 'chrome' | 'gemini'
+    voiceName: '',
+    engine: 'chrome',
     geminiApiKey: '',
     geminiVoice: 'Kore'
   };
 
-  // Gemini voice list
   const GEMINI_VOICES = [
     'Zephyr', 'Puck', 'Charon', 'Kore', 'Fenrir',
     'Aoede', 'Leda', 'Orus', 'Perseus', 'Iapetus',
@@ -46,7 +41,7 @@
     'Quasar', 'Rastaban', 'Sadachbia', 'Talos', 'Umbriel'
   ];
 
-  // ---- Load saved settings ----
+  // ---- Load/Save settings ----
   function loadSettings(callback) {
     chrome.storage.local.get('ttsSettings', (result) => {
       if (result.ttsSettings) {
@@ -83,7 +78,6 @@
           bytes[i] = binaryStr.charCodeAt(i);
         }
 
-        // Convert s16le PCM to Float32 for Web Audio
         const int16 = new Int16Array(bytes.buffer);
         const float32 = new Float32Array(int16.length);
         for (let i = 0; i < int16.length; i++) {
@@ -93,16 +87,13 @@
         const audioBuffer = ctx.createBuffer(1, float32.length, 24000);
         audioBuffer.getChannelData(0).set(float32);
 
-        currentBuffer = audioBuffer;
         const source = ctx.createBufferSource();
         source.buffer = audioBuffer;
         source.connect(ctx.destination);
         currentSource = source;
-        pauseOffset = 0;
 
         source.onended = () => {
           currentSource = null;
-          currentBuffer = null;
           resolve();
         };
 
@@ -122,7 +113,6 @@
         const chunk = audioQueue.shift();
         geminiPlayedChunks++;
 
-        // Update progress: playing chunk X/Y
         if (els) {
           const pct = Math.round((geminiPlayedChunks / geminiTotalChunks) * 100);
           updateProgressBar(pct);
@@ -131,17 +121,14 @@
 
         await playBase64Pcm(chunk.audioData);
       } else if (geminiAllChunksReceived) {
-        // All chunks received and queue is empty → done
         break;
       } else {
-        // Queue temporarily empty, wait for next chunk from background
         await new Promise(r => setTimeout(r, 200));
       }
     }
 
     isPlayingGemini = false;
 
-    // If not stopped, playback ended naturally
     if (!geminiStopped && ttsSettings.engine === 'gemini') {
       isSpeaking = false;
       isPaused = false;
@@ -157,12 +144,11 @@
   function stopGeminiPlayback() {
     geminiStopped = true;
     audioQueue = [];
-    geminiAllChunksReceived = true; // break the wait loop
+    geminiAllChunksReceived = true;
     if (currentSource) {
-      try { currentSource.stop(); } catch (e) { /* ignore */ }
+      try { currentSource.stop(); } catch (e) { }
       currentSource = null;
     }
-    currentBuffer = null;
     isPlayingGemini = false;
     hideProgressBar();
   }
@@ -182,386 +168,394 @@
     }
   }
 
-  // ---- Progress Bar ----
-  function createProgressBar() {
-    const wrap = document.createElement('div');
-    wrap.id = 'sts-progress-wrap';
-
-    const bar = document.createElement('div');
-    bar.id = 'sts-progress-bar';
-
-    const text = document.createElement('span');
-    text.id = 'sts-progress-text';
-    text.textContent = '';
-
-    wrap.append(bar, text);
-    return wrap;
-  }
-
+  // ---- Progress UI ----
   function updateProgressBar(pct) {
-    const wrap = document.getElementById('sts-progress-wrap');
-    const bar = document.getElementById('sts-progress-bar');
-    const text = document.getElementById('sts-progress-text');
-    if (!wrap || !bar) return;
-
-    wrap.style.display = 'flex';
-    bar.style.width = Math.min(100, Math.max(0, pct)) + '%';
-    if (text) {
-      text.textContent = `${Math.round(pct)}%`;
-    }
+    if (!els || !els.progressWrap || !els.progressBar) return;
+    els.progressWrap.style.display = 'block';
+    els.progressBar.style.width = Math.min(100, Math.max(0, pct)) + '%';
   }
 
   function hideProgressBar() {
-    const wrap = document.getElementById('sts-progress-wrap');
-    if (wrap) wrap.style.display = 'none';
+    if (els && els.progressWrap) {
+      els.progressWrap.style.display = 'none';
+      els.progressBar.style.width = '0%';
+    }
   }
 
-  // ---- Build UI ----
+  // ---- Build New UI ----
   function createUI() {
     const container = document.createElement('div');
     container.id = 'sts-floating-container';
 
+    const card = document.createElement('div');
+    card.className = 'sts-card';
+
+    // 1. Header
+    const header = document.createElement('div');
+    header.className = 'sts-header';
+
+    const title = document.createElement('div');
+    title.className = 'sts-title';
+    title.innerHTML = '<span class="sts-title-icon">🎧</span> Đọc Truyện Speech';
+
+    const engineToggle = document.createElement('div');
+    engineToggle.className = 'sts-engine-toggle';
+
+    const btnChrome = document.createElement('button');
+    btnChrome.className = 'sts-engine-btn ' + (ttsSettings.engine === 'chrome' ? 'sts-active' : '');
+    btnChrome.textContent = 'Chrome';
+    btnChrome.dataset.engine = 'chrome';
+
+    const btnGemini = document.createElement('button');
+    btnGemini.className = 'sts-engine-btn ' + (ttsSettings.engine === 'gemini' ? 'sts-active' : '');
+    btnGemini.textContent = 'Gemini';
+    btnGemini.dataset.engine = 'gemini';
+
+    engineToggle.append(btnChrome, btnGemini);
+    header.append(title, engineToggle);
+
+    // 2. Main Playback Controls
+    const controlsSection = document.createElement('div');
+    controlsSection.className = 'sts-controls-section';
+
     const btnRow = document.createElement('div');
     btnRow.className = 'sts-btn-row';
 
-    const speakBtn = createButton('sts-btn-speak', '▶', 'Đọc');
-    const pauseBtn = createButton('sts-btn-pause', '⏸', 'Tạm dừng');
-    pauseBtn.disabled = true;
-    const stopBtn = createButton('sts-btn-stop', '⏹', 'Dừng');
+    const reloadBtn = document.createElement('button');
+    reloadBtn.className = 'sts-btn-icon';
+    reloadBtn.innerHTML = '⟲';
+    reloadBtn.title = 'Tải lại nội dung';
+
+    const playBtn = document.createElement('button');
+    playBtn.className = 'sts-btn-primary';
+    playBtn.innerHTML = '▶';
+    playBtn.title = 'Đọc (Play/Resume)';
+
+    const stopBtn = document.createElement('button');
+    stopBtn.className = 'sts-btn-icon';
+    stopBtn.innerHTML = '⏹';
+    stopBtn.title = 'Dừng (Stop)';
     stopBtn.disabled = true;
-    const reloadBtn = createButton('sts-btn-reload', '⟲', 'Tải lại');
-    const settingsBtn = createButton('sts-btn-settings', '⚙', 'Cài đặt');
 
-    btnRow.append(speakBtn, pauseBtn, stopBtn, reloadBtn, settingsBtn);
+    btnRow.append(reloadBtn, playBtn, stopBtn);
 
-    const progressBar = createProgressBar();
+    const statusWrap = document.createElement('div');
+    statusWrap.className = 'sts-status-wrap';
 
-    const status = document.createElement('span');
-    status.id = 'sts-status';
-    status.textContent = 'Sẵn sàng';
+    const statusText = document.createElement('div');
+    statusText.id = 'sts-status';
+    statusText.textContent = 'Sẵn sàng';
 
-    container.append(btnRow, progressBar, status);
+    const progressWrap = document.createElement('div');
+    progressWrap.id = 'sts-progress-container';
+    const progressBar = document.createElement('div');
+    progressBar.id = 'sts-progress-bar';
+    progressWrap.appendChild(progressBar);
+
+    statusWrap.append(statusText, progressWrap);
+    controlsSection.append(btnRow, statusWrap);
+
+    // 3. Expandable Settings
+    const settingsToggle = document.createElement('button');
+    settingsToggle.className = 'sts-settings-toggle';
+    settingsToggle.innerHTML = `Cài đặt âm thanh <span class="sts-chevron">▼</span>`;
+
+    const settingsBody = createSettingsBody();
+
+    card.append(header, controlsSection, settingsToggle, settingsBody);
+    container.appendChild(card);
     document.body.appendChild(container);
 
-    // Build settings panel
-    const panel = createSettingsPanel();
-    document.body.appendChild(panel);
-
-    return { speakBtn, pauseBtn, stopBtn, reloadBtn, settingsBtn, status, panel };
+    // Return elements reference
+    return {
+      card,
+      btnChrome,
+      btnGemini,
+      playBtn,
+      stopBtn,
+      reloadBtn,
+      status: statusText,
+      progressWrap,
+      progressBar,
+      settingsToggle,
+      settingsBody
+    };
   }
 
-  function createButton(id, icon, tooltip) {
-    const btn = document.createElement('button');
-    btn.id = id;
-    btn.className = 'sts-btn';
-    btn.textContent = icon;
-    btn.setAttribute('data-tooltip', tooltip);
-    return btn;
-  }
+  function createSettingsBody() {
+    const body = document.createElement('div');
+    body.className = 'sts-settings-body';
 
-  // ---- Settings panel ----
-  function createSettingsPanel() {
-    const panel = document.createElement('div');
-    panel.id = 'sts-settings-panel';
-
-    // Title
-    const title = document.createElement('div');
-    title.className = 'sts-panel-title';
-    title.textContent = '⚙ Cài đặt giọng đọc';
-
-    // ---- Engine Toggle ----
-    const engineRow = document.createElement('div');
-    engineRow.className = 'sts-setting-row';
-    const engineLabel = document.createElement('div');
-    engineLabel.className = 'sts-setting-label';
-    engineLabel.innerHTML = '<span>Công cụ đọc</span>';
-
-    const toggleWrap = document.createElement('div');
-    toggleWrap.className = 'sts-engine-toggle';
-
-    const chromeLabel = document.createElement('span');
-    chromeLabel.textContent = 'Chrome';
-    chromeLabel.className = 'sts-toggle-label' + (ttsSettings.engine === 'chrome' ? ' sts-toggle-active' : '');
-    chromeLabel.id = 'sts-label-chrome';
-
-    const toggleSwitch = document.createElement('label');
-    toggleSwitch.className = 'sts-switch';
-    const toggleInput = document.createElement('input');
-    toggleInput.type = 'checkbox';
-    toggleInput.id = 'sts-engine-switch';
-    toggleInput.checked = ttsSettings.engine === 'gemini';
-    const slider = document.createElement('span');
-    slider.className = 'sts-slider';
-    toggleSwitch.append(toggleInput, slider);
-
-    const geminiLabel = document.createElement('span');
-    geminiLabel.textContent = 'Gemini';
-    geminiLabel.className = 'sts-toggle-label' + (ttsSettings.engine === 'gemini' ? ' sts-toggle-active' : '');
-    geminiLabel.id = 'sts-label-gemini';
-
-    toggleWrap.append(chromeLabel, toggleSwitch, geminiLabel);
-    engineRow.append(engineLabel, toggleWrap);
-
-    // ---- Chrome TTS Section ----
+    // Chrome Section
     const chromeSection = document.createElement('div');
     chromeSection.id = 'sts-chrome-section';
     chromeSection.style.display = ttsSettings.engine === 'chrome' ? 'block' : 'none';
 
-    // Rate slider
-    const rateRow = createSliderRow(
-      'Tốc độ đọc', 'sts-rate-slider', 'sts-rate-value',
-      0.5, 3.0, 0.1, ttsSettings.rate,
-      (val) => { ttsSettings.rate = val; saveSettings(); }
-    );
+    const rateRow = createSliderRow('Tốc độ', 'sts-rate-slider', 'sts-rate-value', 0.5, 3.0, 0.1, ttsSettings.rate, (v) => { ttsSettings.rate = v; saveSettings(); });
+    const pitchRow = createSliderRow('Tông giọng', 'sts-pitch-slider', 'sts-pitch-value', 0.0, 2.0, 0.1, ttsSettings.pitch, (v) => { ttsSettings.pitch = v; saveSettings(); });
 
-    // Pitch slider
-    const pitchRow = createSliderRow(
-      'Tông giọng', 'sts-pitch-slider', 'sts-pitch-value',
-      0.0, 2.0, 0.1, ttsSettings.pitch,
-      (val) => { ttsSettings.pitch = val; saveSettings(); }
-    );
-
-    // Voice selector (Chrome)
     const voiceRow = document.createElement('div');
     voiceRow.className = 'sts-setting-row';
-    const voiceLabel = document.createElement('div');
-    voiceLabel.className = 'sts-setting-label';
-    voiceLabel.innerHTML = '<span>Loại giọng</span>';
+    voiceRow.innerHTML = `<div class="sts-setting-label">Giọng đọc</div>`;
     const voiceSelect = document.createElement('select');
     voiceSelect.id = 'sts-voice-select';
-    const defaultOpt = document.createElement('option');
-    defaultOpt.value = '';
-    defaultOpt.textContent = 'Mặc định hệ thống';
-    voiceSelect.appendChild(defaultOpt);
-    voiceSelect.addEventListener('change', () => {
-      ttsSettings.voiceName = voiceSelect.value;
-      saveSettings();
-    });
-    voiceRow.append(voiceLabel, voiceSelect);
+    voiceSelect.innerHTML = `<option value="">Mặc định hệ thống</option>`;
+    voiceSelect.addEventListener('change', () => { ttsSettings.voiceName = voiceSelect.value; saveSettings(); });
+    voiceRow.appendChild(voiceSelect);
 
     chromeSection.append(rateRow, pitchRow, voiceRow);
 
-    // ---- Gemini Section ----
+    // Gemini Section
     const geminiSection = document.createElement('div');
     geminiSection.id = 'sts-gemini-section';
     geminiSection.style.display = ttsSettings.engine === 'gemini' ? 'block' : 'none';
 
-    // API Key input
     const apiKeyRow = document.createElement('div');
     apiKeyRow.className = 'sts-setting-row';
-    const apiKeyLabel = document.createElement('div');
-    apiKeyLabel.className = 'sts-setting-label';
-    apiKeyLabel.innerHTML = '<span>API Key</span>';
+    apiKeyRow.innerHTML = `<div class="sts-setting-label">API Key</div>`;
+
+    const apiKeyWrap = document.createElement('div');
+    apiKeyWrap.className = 'sts-apikey-wrap';
     const apiKeyInput = document.createElement('input');
     apiKeyInput.type = 'password';
     apiKeyInput.id = 'sts-gemini-apikey';
     apiKeyInput.className = 'sts-text-input';
-    apiKeyInput.placeholder = 'Nhập Google AI Studio API Key';
+    apiKeyInput.placeholder = 'Nhập Google AI Studio Key';
     apiKeyInput.value = ttsSettings.geminiApiKey || '';
-    apiKeyInput.addEventListener('change', () => {
-      ttsSettings.geminiApiKey = apiKeyInput.value.trim();
-      saveSettings();
-    });
+    apiKeyInput.addEventListener('change', () => { ttsSettings.geminiApiKey = apiKeyInput.value.trim(); saveSettings(); });
 
-    // Show/hide toggle for API key
-    const apiKeyWrap = document.createElement('div');
-    apiKeyWrap.className = 'sts-apikey-wrap';
     const toggleVis = document.createElement('button');
     toggleVis.className = 'sts-apikey-toggle';
-    toggleVis.textContent = '👁';
-    toggleVis.type = 'button';
-    toggleVis.addEventListener('click', () => {
-      apiKeyInput.type = apiKeyInput.type === 'password' ? 'text' : 'password';
-    });
-    apiKeyWrap.append(apiKeyInput, toggleVis);
-    apiKeyRow.append(apiKeyLabel, apiKeyWrap);
+    toggleVis.innerHTML = '👁';
+    toggleVis.addEventListener('click', () => { apiKeyInput.type = apiKeyInput.type === 'password' ? 'text' : 'password'; });
 
-    // Gemini voice selector
-    const geminiVoiceRow = document.createElement('div');
-    geminiVoiceRow.className = 'sts-setting-row';
-    const geminiVoiceLabel = document.createElement('div');
-    geminiVoiceLabel.className = 'sts-setting-label';
-    geminiVoiceLabel.innerHTML = '<span>Giọng Gemini</span>';
-    const geminiVoiceSelect = document.createElement('select');
-    geminiVoiceSelect.id = 'sts-gemini-voice-select';
+    apiKeyWrap.append(apiKeyInput, toggleVis);
+    apiKeyRow.appendChild(apiKeyWrap);
+
+    const gVoiceRow = document.createElement('div');
+    gVoiceRow.className = 'sts-setting-row';
+    gVoiceRow.innerHTML = `<div class="sts-setting-label">Giọng Gemini</div>`;
+    const gVoiceSelect = document.createElement('select');
+    gVoiceSelect.id = 'sts-gemini-voice-select';
     GEMINI_VOICES.forEach(v => {
       const opt = document.createElement('option');
       opt.value = v;
       opt.textContent = v;
       if (v === ttsSettings.geminiVoice) opt.selected = true;
-      geminiVoiceSelect.appendChild(opt);
+      gVoiceSelect.appendChild(opt);
     });
-    geminiVoiceSelect.addEventListener('change', () => {
-      ttsSettings.geminiVoice = geminiVoiceSelect.value;
-      saveSettings();
-    });
-    geminiVoiceRow.append(geminiVoiceLabel, geminiVoiceSelect);
+    gVoiceSelect.addEventListener('change', () => { ttsSettings.geminiVoice = gVoiceSelect.value; saveSettings(); });
+    gVoiceRow.appendChild(gVoiceSelect);
 
-    geminiSection.append(apiKeyRow, geminiVoiceRow);
+    geminiSection.append(apiKeyRow, gVoiceRow);
+    body.append(chromeSection, geminiSection);
 
-    // ---- Toggle engine event ----
-    toggleInput.addEventListener('change', () => {
-      const isGemini = toggleInput.checked;
-      ttsSettings.engine = isGemini ? 'gemini' : 'chrome';
-      saveSettings();
-
-      chromeSection.style.display = isGemini ? 'none' : 'block';
-      geminiSection.style.display = isGemini ? 'block' : 'none';
-
-      document.getElementById('sts-label-chrome').classList.toggle('sts-toggle-active', !isGemini);
-      document.getElementById('sts-label-gemini').classList.toggle('sts-toggle-active', isGemini);
-    });
-
-    panel.append(title, engineRow, chromeSection, geminiSection);
-
-    // Load voices from background
-    loadVoices(voiceSelect);
-
-    return panel;
-  }
-
-  function createSliderRow(labelText, sliderId, valueId, min, max, step, initial, onChange) {
-    const row = document.createElement('div');
-    row.className = 'sts-setting-row';
-
-    const label = document.createElement('div');
-    label.className = 'sts-setting-label';
-    const labelSpan = document.createElement('span');
-    labelSpan.textContent = labelText;
-    const valueSpan = document.createElement('span');
-    valueSpan.className = 'sts-setting-value';
-    valueSpan.id = valueId;
-    valueSpan.textContent = initial.toFixed(1);
-    label.append(labelSpan, valueSpan);
-
-    const slider = document.createElement('input');
-    slider.type = 'range';
-    slider.id = sliderId;
-    slider.min = min;
-    slider.max = max;
-    slider.step = step;
-    slider.value = initial;
-
-    slider.addEventListener('input', () => {
-      const val = parseFloat(slider.value);
-      valueSpan.textContent = val.toFixed(1);
-      onChange(val);
-    });
-
-    row.append(label, slider);
-    return row;
-  }
-
-  function loadVoices(selectEl) {
+    // Load chrome voices async
     chrome.runtime.sendMessage({ action: 'tts-getVoices' }, (response) => {
       if (!response || !response.voices) return;
       response.voices.forEach((voice) => {
         const opt = document.createElement('option');
         opt.value = voice.voiceName;
         opt.textContent = `${voice.voiceName} (${voice.lang || '?'})`;
-        if (voice.voiceName === ttsSettings.voiceName) {
-          opt.selected = true;
-        }
-        selectEl.appendChild(opt);
+        if (voice.voiceName === ttsSettings.voiceName) opt.selected = true;
+        voiceSelect.appendChild(opt);
       });
     });
+
+    return body;
   }
 
-  // ---- Fetch chapter text ----
-  function fetchContent(els) {
+  function createSliderRow(label, id, valId, min, max, step, initial, onChange) {
+    const row = document.createElement('div');
+    row.className = 'sts-setting-row';
+    row.innerHTML = `<div class="sts-setting-label"><span>${label}</span><span class="sts-setting-value" id="${valId}">${initial.toFixed(1)}</span></div>`;
+
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.id = id;
+    slider.min = min;
+    slider.max = max;
+    slider.step = step;
+    slider.value = initial;
+
+    slider.addEventListener('input', () => {
+      const v = parseFloat(slider.value);
+      row.querySelector('.sts-setting-value').textContent = v.toFixed(1);
+      onChange(v);
+    });
+    row.appendChild(slider);
+    return row;
+  }
+
+  // ---- Fetch Content ----
+  function fetchContent() {
     const chapterDiv = document.getElementById('chapter-c');
     if (!chapterDiv) {
       els.status.textContent = 'Không tìm thấy nội dung chương.';
-      els.speakBtn.disabled = true;
+      els.playBtn.disabled = true;
       return;
     }
     currentText = chapterDiv.innerText.trim();
     if (currentText) {
       const charCount = currentText.length;
-      els.status.textContent = `Đã tải nội dung (${charCount.toLocaleString()} ký tự).`;
-      els.speakBtn.disabled = false;
+      els.status.textContent = `Đã tải: ${charCount.toLocaleString()} ký tự.`;
+      els.playBtn.disabled = false;
     } else {
       els.status.textContent = 'Nội dung trống.';
-      els.speakBtn.disabled = true;
+      els.playBtn.disabled = true;
     }
   }
 
-  // ---- TTS dispatch ----
-  function speakText() {
+  // ---- Dispatch TTS ----
+  function handlePlayResume() {
+    if (isPaused) {
+      if (ttsSettings.engine === 'gemini') {
+        resumeGeminiPlayback();
+        isPaused = false;
+        isSpeaking = true;
+        els.status.textContent = 'Đang đọc (Gemini)...';
+        updateButtons();
+      } else {
+        chrome.runtime.sendMessage({ action: 'tts-resume' });
+        isPaused = false;
+        isSpeaking = true;
+        els.status.textContent = 'Đang đọc...';
+        updateButtons();
+      }
+    } else if (isSpeaking) {
+      // It's speaking, so this acts as PAUSE
+      if (ttsSettings.engine === 'gemini') {
+        pauseGeminiPlayback();
+      } else {
+        chrome.runtime.sendMessage({ action: 'tts-pause' });
+      }
+      isPaused = true;
+      els.status.textContent = 'Tạm dừng.';
+      updateButtons();
+    } else {
+      // Not speaking, start NEW speech
+      startSpeech();
+    }
+  }
+
+  function startSpeech() {
     if (!currentText) return;
 
     if (ttsSettings.engine === 'gemini') {
-      speakWithGemini();
-    } else {
-      speakWithChrome();
-    }
-  }
+      if (!ttsSettings.geminiApiKey) {
+        els.status.textContent = 'Vui lòng nhập API Key trong cài đặt.';
+        return;
+      }
 
-  function speakWithChrome() {
-    chrome.runtime.sendMessage({
-      action: 'tts-speak',
-      text: currentText,
-      rate: ttsSettings.rate,
-      pitch: ttsSettings.pitch,
-      voiceName: ttsSettings.voiceName
-    });
-  }
+      geminiStopped = false;
+      audioQueue = [];
+      isPlayingGemini = false;
+      geminiTotalChunks = 0;
+      geminiReceivedChunks = 0;
+      geminiAllChunksReceived = false;
+      geminiPlayedChunks = 0;
 
-  function speakWithGemini() {
-    if (!ttsSettings.geminiApiKey) {
-      if (els) els.status.textContent = 'Vui lòng nhập API Key trong cài đặt.';
-      return;
-    }
-
-    // Reset Gemini playback state
-    geminiStopped = false;
-    audioQueue = [];
-    isPlayingGemini = false;
-    geminiTotalChunks = 0;
-    geminiReceivedChunks = 0;
-    geminiAllChunksReceived = false;
-    geminiPlayedChunks = 0;
-
-    isSpeaking = true;
-    isPaused = false;
-    if (els) {
-      updateButtons(els);
+      isSpeaking = true;
+      isPaused = false;
+      updateButtons();
       els.status.textContent = 'Đang kết nối Gemini...';
       updateProgressBar(0);
-    }
 
-    chrome.runtime.sendMessage({
-      action: 'gemini-tts-speak',
-      text: currentText,
-      apiKey: ttsSettings.geminiApiKey,
-      geminiVoice: ttsSettings.geminiVoice
-    }, (response) => {
-      if (response && !response.success && response.error) {
+      chrome.runtime.sendMessage({
+        action: 'gemini-tts-speak',
+        text: currentText,
+        apiKey: ttsSettings.geminiApiKey,
+        geminiVoice: ttsSettings.geminiVoice
+      }, (resp) => {
+        if (resp && !resp.success && resp.error) {
+          isSpeaking = false;
+          isPaused = false;
+          updateButtons();
+          hideProgressBar();
+          els.status.textContent = 'Lỗi: ' + resp.error;
+        }
+      });
+    } else {
+      chrome.runtime.sendMessage({
+        action: 'tts-speak',
+        text: currentText,
+        rate: ttsSettings.rate,
+        pitch: ttsSettings.pitch,
+        voiceName: ttsSettings.voiceName
+      });
+    }
+  }
+
+  function updateButtons() {
+    if (!els) return;
+
+    if (isSpeaking && !isPaused) {
+      els.playBtn.innerHTML = '⏸';
+      els.playBtn.title = 'Tạm dừng (Pause)';
+      els.stopBtn.disabled = false;
+    } else if (isPaused) {
+      els.playBtn.innerHTML = '▶';
+      els.playBtn.title = 'Tiếp tục (Resume)';
+      els.stopBtn.disabled = false;
+    } else {
+      els.playBtn.innerHTML = '▶';
+      els.playBtn.title = 'Đọc (Play)';
+      els.stopBtn.disabled = true;
+    }
+  }
+
+  // ---- Events & Handlers ----
+  function attachEvents() {
+    els.playBtn.addEventListener('click', handlePlayResume);
+
+    els.stopBtn.addEventListener('click', () => {
+      if (isSpeaking) {
+        if (ttsSettings.engine === 'gemini') stopGeminiPlayback();
+        chrome.runtime.sendMessage({ action: 'tts-stop' });
         isSpeaking = false;
         isPaused = false;
-        if (els) {
-          updateButtons(els);
-          hideProgressBar();
-          els.status.textContent = 'Lỗi: ' + response.error;
-        }
+        els.status.textContent = 'Đã dừng.';
+        updateButtons();
       }
     });
+
+    els.reloadBtn.addEventListener('click', () => {
+      if (ttsSettings.engine === 'gemini') stopGeminiPlayback();
+      chrome.runtime.sendMessage({ action: 'tts-stop' });
+      isSpeaking = false;
+      isPaused = false;
+      updateButtons();
+      fetchContent();
+    });
+
+    els.settingsToggle.addEventListener('click', () => {
+      settingsOpen = !settingsOpen;
+      els.settingsToggle.classList.toggle('sts-open', settingsOpen);
+      els.settingsBody.classList.toggle('sts-open', settingsOpen);
+    });
+
+    // Engine Toggle Logic
+    const switchEngine = (engine) => {
+      ttsSettings.engine = engine;
+      saveSettings();
+
+      els.btnChrome.classList.toggle('sts-active', engine === 'chrome');
+      els.btnGemini.classList.toggle('sts-active', engine === 'gemini');
+
+      document.getElementById('sts-chrome-section').style.display = engine === 'chrome' ? 'block' : 'none';
+      document.getElementById('sts-gemini-section').style.display = engine === 'gemini' ? 'block' : 'none';
+    };
+
+    els.btnChrome.addEventListener('click', () => switchEngine('chrome'));
+    els.btnGemini.addEventListener('click', () => switchEngine('gemini'));
   }
 
-  function updateButtons(els) {
-    els.speakBtn.disabled = isSpeaking && !isPaused;
-    els.pauseBtn.disabled = !isSpeaking || isPaused;
-    els.stopBtn.disabled = !isSpeaking;
-  }
-
-  // ---- Listen for messages from background ----
+  // Background message listener
   let els;
-
   chrome.runtime.onMessage.addListener((message) => {
     if (!els) return;
 
     switch (message.action) {
-      // Gemini: session started, we know total chunks
       case 'gemini-start':
         geminiTotalChunks = message.totalChunks;
         geminiReceivedChunks = 0;
@@ -569,199 +563,70 @@
         geminiPlayedChunks = 0;
         isSpeaking = true;
         isPaused = false;
-        updateButtons(els);
-        els.status.textContent = `Đang tạo audio (0/${geminiTotalChunks} phần)...`;
+        updateButtons();
+        els.status.textContent = `Đang tạo audio (0/${geminiTotalChunks})...`;
         updateProgressBar(0);
         break;
 
-      // Gemini: progress update (fetching chunk N)
       case 'gemini-progress':
         if (message.phase === 'fetching') {
           const fetchPct = Math.round(((message.chunkIndex) / message.totalChunks) * 100);
           els.status.textContent = `Đang tạo phần ${message.chunkIndex + 1}/${message.totalChunks}...`;
-          // Progress bar shows a blend of fetch progress and play progress
           updateProgressBar(fetchPct);
         }
         break;
 
-      // Gemini: audio chunk received
       case 'gemini-audio-chunk':
         geminiReceivedChunks++;
-        if (message.isLast) {
-          geminiAllChunksReceived = true;
-        }
-
+        if (message.isLast) geminiAllChunksReceived = true;
         audioQueue.push(message);
-
-        // Start playing if not already
-        if (!isPlayingGemini && !geminiStopped) {
-          processAudioQueue();
-        }
+        if (!isPlayingGemini && !geminiStopped) processAudioQueue();
         break;
 
-      // Chrome TTS events
       case 'tts-event':
-        // (keep existing event handler for chrome tts)
+        handleChromeTtsEvent(message);
         break;
-
-      default:
-        return;
-    }
-
-    // Handle tts-event separately (for chrome.tts)
-    if (message.action === 'tts-event') {
-      switch (message.type) {
-        case 'start':
-          isSpeaking = true;
-          isPaused = false;
-          updateButtons(els);
-          if (ttsSettings.engine === 'gemini') {
-            els.status.textContent = 'Đang đọc (Gemini)...';
-          } else {
-            els.status.textContent = 'Đang đọc...';
-          }
-          break;
-
-        case 'end':
-          isSpeaking = false;
-          isPaused = false;
-          updateButtons(els);
-          els.status.textContent = 'Đã đọc xong.';
-          break;
-
-        case 'pause':
-          isPaused = true;
-          updateButtons(els);
-          els.status.textContent = 'Tạm dừng.';
-          break;
-
-        case 'resume':
-          isPaused = false;
-          updateButtons(els);
-          els.status.textContent = 'Đang đọc...';
-          break;
-
-        case 'error':
-        case 'cancelled':
-          isSpeaking = false;
-          isPaused = false;
-          updateButtons(els);
-          if (message.type === 'error') {
-            els.status.textContent = 'Lỗi: ' + (message.error || 'Lỗi đọc.');
-          }
-          break;
-      }
     }
   });
 
-  // ---- Event listeners ----
-  function attachEvents(els) {
-    els.speakBtn.addEventListener('click', () => {
-      if (isPaused) {
-        if (ttsSettings.engine === 'gemini') {
-          resumeGeminiPlayback();
-          isPaused = false;
-          isSpeaking = true;
-          els.status.textContent = 'Đang đọc (Gemini)...';
-          updateButtons(els);
-        } else {
-          chrome.runtime.sendMessage({ action: 'tts-resume' });
-          isPaused = false;
-          isSpeaking = true;
-          els.status.textContent = 'Đang đọc...';
-          updateButtons(els);
-        }
-      } else {
-        speakText();
-      }
-    });
-
-    els.pauseBtn.addEventListener('click', () => {
-      if (isSpeaking && !isPaused) {
-        if (ttsSettings.engine === 'gemini') {
-          pauseGeminiPlayback();
-        } else {
-          chrome.runtime.sendMessage({ action: 'tts-pause' });
-        }
-        isPaused = true;
-        els.status.textContent = 'Tạm dừng.';
-        updateButtons(els);
-      }
-    });
-
-    els.stopBtn.addEventListener('click', () => {
-      if (isSpeaking) {
-        if (ttsSettings.engine === 'gemini') {
-          stopGeminiPlayback();
-        }
-        chrome.runtime.sendMessage({ action: 'tts-stop' });
+  function handleChromeTtsEvent(msg) {
+    switch (msg.type) {
+      case 'start':
+        isSpeaking = true;
+        isPaused = false;
+        updateButtons();
+        els.status.textContent = ttsSettings.engine === 'gemini' ? 'Đang đọc (Gemini)...' : 'Đang đọc...';
+        break;
+      case 'end':
         isSpeaking = false;
         isPaused = false;
-        els.status.textContent = 'Đã dừng.';
-        updateButtons(els);
-      }
-    });
-
-    els.reloadBtn.addEventListener('click', () => {
-      if (ttsSettings.engine === 'gemini') {
-        stopGeminiPlayback();
-      }
-      chrome.runtime.sendMessage({ action: 'tts-stop' });
-      isSpeaking = false;
-      isPaused = false;
-      updateButtons(els);
-      fetchContent(els);
-    });
-
-    // Toggle settings panel
-    els.settingsBtn.addEventListener('click', () => {
-      settingsOpen = !settingsOpen;
-      els.panel.classList.toggle('sts-panel-open', settingsOpen);
-    });
-
-    // Close panel when clicking outside
-    document.addEventListener('click', (e) => {
-      if (
-        settingsOpen &&
-        !els.panel.contains(e.target) &&
-        e.target !== els.settingsBtn
-      ) {
-        settingsOpen = false;
-        els.panel.classList.remove('sts-panel-open');
-      }
-    });
-  }
-
-  // ---- Sync UI sliders with loaded settings ----
-  function syncUIToSettings() {
-    const rateSlider = document.getElementById('sts-rate-slider');
-    const rateValue = document.getElementById('sts-rate-value');
-    const pitchSlider = document.getElementById('sts-pitch-slider');
-    const pitchValue = document.getElementById('sts-pitch-value');
-    const voiceSelect = document.getElementById('sts-voice-select');
-    const engineSwitch = document.getElementById('sts-engine-switch');
-
-    if (rateSlider) {
-      rateSlider.value = ttsSettings.rate;
-      rateValue.textContent = ttsSettings.rate.toFixed(1);
-    }
-    if (pitchSlider) {
-      pitchSlider.value = ttsSettings.pitch;
-      pitchValue.textContent = ttsSettings.pitch.toFixed(1);
-    }
-    if (voiceSelect) {
-      voiceSelect.value = ttsSettings.voiceName;
-    }
-    if (engineSwitch) {
-      engineSwitch.checked = ttsSettings.engine === 'gemini';
+        updateButtons();
+        els.status.textContent = 'Đã đọc xong.';
+        break;
+      case 'pause':
+        isPaused = true;
+        updateButtons();
+        els.status.textContent = 'Tạm dừng.';
+        break;
+      case 'resume':
+        isPaused = false;
+        updateButtons();
+        els.status.textContent = 'Đang đọc...';
+        break;
+      case 'error':
+      case 'cancelled':
+        isSpeaking = false;
+        isPaused = false;
+        updateButtons();
+        if (msg.type === 'error') els.status.textContent = 'Lỗi: ' + (msg.error || 'Lỗi đọc.');
+        break;
     }
   }
 
   // ---- Init ----
   loadSettings(() => {
     els = createUI();
-    syncUIToSettings();
-    attachEvents(els);
-    fetchContent(els);
+    attachEvents();
+    fetchContent();
   });
 })();
