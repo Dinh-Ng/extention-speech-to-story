@@ -38,6 +38,11 @@ async function callGeminiTts(text, apiKey, voiceName) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent`;
 
   const body = {
+    systemInstruction: {
+      parts: [{
+        text: "You are an audiobook narrator. Read the story with a consistent, calm narrative voice. You MUST use exactly ONE voice throughout. Do NOT change voices for different characters. Do NOT hallucinate audio."
+      }]
+    },
     contents: [{
       parts: [{ text: text }]
     }],
