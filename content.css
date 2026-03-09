@@ -1,43 +1,83 @@
 /* ===== Cohesive TTS Floating Card ===== */
 
+:root {
+  /* Dark Theme (Default) Variables */
+  --sts-bg-card: rgba(30, 33, 40, 0.95);
+  --sts-bg-header: rgba(255, 255, 255, 0.02);
+  --sts-border: rgba(255, 255, 255, 0.1);
+  --sts-border-light: rgba(255, 255, 255, 0.05);
+  --sts-text-main: #fff;
+  --sts-text-sec: #e0e0e0;
+  --sts-text-muted: #aaa;
+  --sts-text-dim: #888;
+  --sts-bg-hover: rgba(255, 255, 255, 0.08);
+  --sts-bg-active: rgba(255, 255, 255, 0.15);
+  --sts-bg-input: rgba(255, 255, 255, 0.05);
+  --sts-bg-toggle: rgba(0, 0, 0, 0.3);
+  --sts-shadow: rgba(0, 0, 0, 0.4);
+  --sts-track: rgba(255, 255, 255, 0.15);
+  --sts-thumb: #fff;
+  --sts-select-bg: #2c2f36;
+}
+
+.sts-light-theme {
+  /* Light Theme Variables */
+  --sts-bg-card: rgba(255, 255, 255, 0.95);
+  --sts-bg-header: rgba(0, 0, 0, 0.02);
+  --sts-border: rgba(0, 0, 0, 0.1);
+  --sts-border-light: rgba(0, 0, 0, 0.05);
+  --sts-text-main: #111;
+  --sts-text-sec: #333;
+  --sts-text-muted: #555;
+  --sts-text-dim: #666;
+  --sts-bg-hover: rgba(0, 0, 0, 0.05);
+  --sts-bg-active: rgba(0, 0, 0, 0.08);
+  --sts-bg-input: rgba(0, 0, 0, 0.03);
+  --sts-bg-toggle: rgba(0, 0, 0, 0.06);
+  --sts-shadow: rgba(0, 0, 0, 0.15);
+  --sts-track: rgba(0, 0, 0, 0.15);
+  --sts-thumb: #fff;
+  --sts-select-bg: #fff;
+}
+
 #sts-floating-container {
   position: fixed;
   bottom: 24px;
-  right: 24px; /* Move to right side for better UX */
+  right: 24px;
   z-index: 2147483647;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  color: #e0e0e0;
+  color: var(--sts-text-sec);
 }
 
 /* --- Main Card --- */
 .sts-card {
-  background: rgba(30, 33, 40, 0.95);
+  background: var(--sts-bg-card);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--sts-border);
   border-radius: 16px;
   width: 340px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 10px 40px var(--sts-shadow);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.3s ease, background 0.3s ease, border-color 0.3s ease;
 }
 
 /* --- Header --- */
 .sts-header {
   padding: 16px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--sts-border-light);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--sts-bg-header);
 }
 
 .sts-title {
   font-size: 15px;
   font-weight: 600;
-  color: #fff;
+  color: var(--sts-text-main);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -52,16 +92,16 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--sts-bg-toggle);
   padding: 4px;
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--sts-border-light);
 }
 
 .sts-engine-btn {
   background: transparent;
   border: none;
-  color: #888;
+  color: var(--sts-text-dim);
   font-size: 11px;
   font-weight: 600;
   padding: 4px 12px;
@@ -135,8 +175,8 @@
   height: 44px;
   border: none;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  color: #ccc;
+  background: var(--sts-bg-hover);
+  color: var(--sts-text-sec);
   font-size: 18px;
   cursor: pointer;
   display: flex;
@@ -147,8 +187,8 @@
 }
 
 .sts-btn-icon:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
+  background: var(--sts-bg-active);
+  color: var(--sts-text-main);
   transform: scale(1.05);
 }
 
@@ -172,7 +212,7 @@
 
 #sts-status {
   font-size: 13px;
-  color: #aaa;
+  color: var(--sts-text-muted);
   text-align: center;
   font-weight: 500;
   min-height: 18px;
@@ -181,10 +221,13 @@
 #sts-progress-container {
   width: 100%;
   height: 6px;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.15);
   border-radius: 3px;
   overflow: hidden;
   display: none;
+}
+.sts-light-theme #sts-progress-container {
+  background: rgba(0, 0, 0, 0.08);
 }
 
 #sts-progress-bar {
@@ -206,10 +249,10 @@
 .sts-settings-toggle {
   width: 100%;
   padding: 12px;
-  background: rgba(255, 255, 255, 0.03);
+  background: transparent;
   border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  color: #888;
+  border-top: 1px solid var(--sts-border-light);
+  color: var(--sts-text-dim);
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
@@ -224,8 +267,8 @@
 }
 
 .sts-settings-toggle:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
+  background: var(--sts-bg-hover);
+  color: var(--sts-text-main);
 }
 
 .sts-settings-toggle .sts-chevron {
@@ -242,13 +285,13 @@
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding 0.4s ease;
-  background: rgba(0, 0, 0, 0.15);
+  background: var(--sts-bg-header);
 }
 
 .sts-settings-body.sts-open {
   padding: 20px;
-  max-height: 400px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  max-height: 500px;
+  border-top: 1px solid var(--sts-border-light);
 }
 
 /* --- Settings Inputs --- */
@@ -260,18 +303,25 @@
   margin-bottom: 0;
 }
 
+.sts-setting-row.sts-row-inline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .sts-setting-label {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
   font-size: 12px;
-  color: #aaa;
+  color: var(--sts-text-muted);
   font-weight: 500;
 }
+.sts-row-inline .sts-setting-label { margin-bottom: 0; }
 
 .sts-setting-value {
-  color: #fff;
+  color: var(--sts-text-main);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -282,7 +332,7 @@ input[type="range"] {
   width: 100%;
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--sts-track);
   outline: none;
   cursor: pointer;
 }
@@ -293,10 +343,14 @@ input[type="range"]::-webkit-slider-thumb {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--sts-thumb);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   cursor: pointer;
   transition: transform 0.1s ease;
+}
+.sts-light-theme input[type="range"]::-webkit-slider-thumb {
+  border: 1px solid #ccc;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
@@ -307,9 +361,9 @@ select {
   width: 100%;
   padding: 8px 12px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
-  color: #e0e0e0;
+  border: 1px solid var(--sts-border);
+  background: var(--sts-bg-input);
+  color: var(--sts-text-sec);
   font-size: 13px;
   font-family: inherit;
   cursor: pointer;
@@ -318,13 +372,13 @@ select {
 }
 
 select:focus, select:hover {
-  border-color: rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: #4285f4;
+  background: var(--sts-bg-hover);
 }
 
 select option {
-  background: #2c2f36;
-  color: #e0e0e0;
+  background: var(--sts-select-bg);
+  color: var(--sts-text-main);
 }
 
 .sts-apikey-wrap {
@@ -337,9 +391,9 @@ select option {
   flex: 1;
   padding: 8px 12px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
+  border: 1px solid var(--sts-border);
+  background: var(--sts-bg-input);
+  color: var(--sts-text-main);
   font-size: 13px;
   font-family: inherit;
   outline: none;
@@ -349,7 +403,7 @@ select option {
 
 .sts-text-input:focus {
   border-color: #4285f4;
-  background: rgba(30, 33, 40, 1);
+  background: var(--sts-bg-card);
 }
 
 .sts-apikey-toggle {
@@ -357,8 +411,8 @@ select option {
   height: 34px;
   border: none;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  color: #aaa;
+  background: var(--sts-bg-input);
+  color: var(--sts-text-muted);
   font-size: 14px;
   cursor: pointer;
   display: flex;
@@ -369,6 +423,32 @@ select option {
 }
 
 .sts-apikey-toggle:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
+  background: var(--sts-bg-active);
+  color: var(--sts-text-main);
+}
+
+/* Theme picker buttons */
+.sts-theme-picker {
+  display: flex;
+  gap: 6px;
+}
+.sts-theme-btn {
+  background: var(--sts-bg-input);
+  border: 1px solid var(--sts-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: var(--sts-text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.sts-theme-btn:hover {
+  background: var(--sts-bg-hover);
+  color: var(--sts-text-main);
+}
+.sts-theme-btn.sts-active {
+  background: var(--sts-text-main);
+  color: var(--sts-bg-card);
+  border-color: var(--sts-text-main);
+  font-weight: 600;
 }

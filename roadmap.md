@@ -4,7 +4,7 @@ Dưới đây là kế hoạch phát triển và những mục tiêu mở rộng
 
 ## Mục tiêu ngắn hạn (Short-term Goals)
 
-- [ ] **Chuyển đổi giao diện Sáng / Tối (Dark / Light Theme)**
+- [x] **Chuyển đổi giao diện Sáng / Tối (Dark / Light Theme)**
   - Tích hợp nút chuyển đổi giao diện bảng điều khiển trực tiếp trên UI.
   - Tự động đồng bộ giao diện theo thiết lập giao diện hệ thống (System Preferences).
 

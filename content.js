@@ -29,7 +29,8 @@
     voiceName: '',
     engine: 'chrome',
     geminiApiKey: '',
-    geminiVoice: 'Kore'
+    geminiVoice: 'Kore',
+    theme: 'system'
   };
 
   const GEMINI_VOICES = [
@@ -182,6 +183,47 @@
     }
   }
 
+  // ---- Theme Logic ----
+  function applyTheme() {
+    if (!els || !els.card) return;
+    let isLight = false;
+
+    if (ttsSettings.theme === 'light') {
+      isLight = true;
+    } else if (ttsSettings.theme === 'dark') {
+      isLight = false;
+    } else {
+      // system
+      isLight = !window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+
+    if (isLight) {
+      els.card.classList.add('sts-light-theme');
+    } else {
+      els.card.classList.remove('sts-light-theme');
+    }
+    updateThemeUI();
+  }
+
+  function updateThemeUI() {
+    if (!els) return;
+    const btns = document.querySelectorAll('.sts-theme-btn');
+    btns.forEach(b => {
+      if (b.dataset.theme === ttsSettings.theme) {
+        b.classList.add('sts-active');
+      } else {
+        b.classList.remove('sts-active');
+      }
+    });
+  }
+
+  // Listen to OS theme changes if set to system
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (ttsSettings.theme === 'system') {
+      applyTheme();
+    }
+  });
+
   // ---- Build New UI ----
   function createUI() {
     const container = document.createElement('div');
@@ -285,6 +327,32 @@
   function createSettingsBody() {
     const body = document.createElement('div');
     body.className = 'sts-settings-body';
+
+    // Theme Section (Top of settings)
+    const themeRow = document.createElement('div');
+    themeRow.className = 'sts-setting-row sts-row-inline';
+    const themeLabel = document.createElement('div');
+    themeLabel.className = 'sts-setting-label';
+    themeLabel.textContent = 'Giao diện';
+
+    const themePicker = document.createElement('div');
+    themePicker.className = 'sts-theme-picker';
+
+    ['system', 'light', 'dark'].forEach(t => {
+      const btn = document.createElement('button');
+      btn.className = 'sts-theme-btn';
+      btn.dataset.theme = t;
+      btn.textContent = t === 'system' ? 'Tự động' : (t === 'light' ? 'Sáng' : 'Tối');
+      btn.addEventListener('click', () => {
+        ttsSettings.theme = t;
+        saveSettings();
+        applyTheme();
+      });
+      themePicker.appendChild(btn);
+    });
+
+    themeRow.append(themeLabel, themePicker);
+    body.appendChild(themeRow);
 
     // Chrome Section
     const chromeSection = document.createElement('div');
@@ -626,6 +694,7 @@
   // ---- Init ----
   loadSettings(() => {
     els = createUI();
+    applyTheme(); // apply theme immediately after UI creation
     attachEvents();
     fetchContent();
   });
