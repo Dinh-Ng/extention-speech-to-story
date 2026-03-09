@@ -2,7 +2,7 @@
 
 // ---- Gemini TTS Helper ----
 async function geminiTtsSpeak(text, apiKey, voiceName, tabId) {
-  const CHUNK_SIZE = 4000; // characters per chunk (safe under 32k token limit)
+  const CHUNK_SIZE = 2500; // Giảm xuống 2500 ký tự để tránh lỗi 500 Internal Error của model preview
   const chunks = splitTextIntoChunks(text, CHUNK_SIZE);
 
   // Notify content script: total chunks count + speech started
@@ -38,11 +38,6 @@ async function callGeminiTts(text, apiKey, voiceName) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent`;
 
   const body = {
-    systemInstruction: {
-      parts: [{
-        text: "You are an audiobook narrator. Read the story with a consistent, calm narrative voice. You MUST use exactly ONE voice throughout. Do NOT change voices for different characters. Do NOT hallucinate audio."
-      }]
-    },
     contents: [{
       parts: [{ text: text }]
     }],
