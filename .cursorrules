@@ -1,0 +1,17 @@
+# Commit Message Generation Rule
+When you (the AI) are asked to generate a commit message, you must strictly follow this format:
+
+1. **Title (First line):**
+   - Must be short and concise, strictly UNDER 50 characters.
+   - Must use Conventional Commits format: `<type>: <emoji> <Subject in imperative mood>` (e.g., `feat: 🎸 Improve UI`, `fix: 🐛 Resolve crash`, `docs: 📝 Update README`).
+   
+2. **Body (Blank line after title, then details):**
+   - Must contain a detailed, full explanation of the changes made.
+   - Explain *what* was changed and *why*.
+
+### Example:
+```
+feat: 🎸 Improve UI
+
+Improve UI with better layout, add conversion buttons and clipboard functionality. This makes the interface more spacious and intuitive for users to operate.
+```
