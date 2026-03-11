@@ -1,9 +1,10 @@
 // background.js — TTS service worker using chrome.tts API + Gemini TTS
 
-// ---- Gemini TTS Helper ----
-async function geminiTtsSpeak(text, apiKey, voiceName, tabId) {
-  const CHUNK_SIZE = 2500; // Giảm xuống 2500 ký tự để tránh lỗi 500 Internal Error của model preview
+// ---- Gemini TTS Helper (Multi-Key Support) ----
+async function geminiTtsSpeak(text, apiKeys, activeKeyIndex, voiceName, tabId) {
+  const CHUNK_SIZE = 2500;
   const chunks = splitTextIntoChunks(text, CHUNK_SIZE);
+  let currentKeyIdx = activeKeyIndex || 0;
 
   // Notify content script: total chunks count + speech started
   await chrome.tabs.sendMessage(tabId, {
@@ -21,7 +22,38 @@ async function geminiTtsSpeak(text, apiKey, voiceName, tabId) {
       phase: 'fetching'
     }).catch(() => {});
 
-    const audioBase64 = await callGeminiTts(chunks[i], apiKey, voiceName);
+    // Try current key, auto-rotate on quota/server errors
+    let audioBase64 = null;
+    let lastError = null;
+    const totalKeys = apiKeys.length;
+
+    for (let attempt = 0; attempt < totalKeys; attempt++) {
+      const key = apiKeys[currentKeyIdx];
+      try {
+        audioBase64 = await callGeminiTts(chunks[i], key, voiceName);
+        lastError = null;
+        break; // success
+      } catch (err) {
+        lastError = err;
+        const isQuotaOrServer = err.status === 429 || err.status === 500 || err.status === 503;
+        if (isQuotaOrServer && totalKeys > 1) {
+          // Rotate to next key
+          currentKeyIdx = (currentKeyIdx + 1) % totalKeys;
+          await chrome.tabs.sendMessage(tabId, {
+            action: 'gemini-key-switch',
+            newKeyIndex: currentKeyIdx,
+            reason: err.status === 429 ? 'Hết quota' : 'Lỗi server',
+            keyLabel: `Key ${currentKeyIdx + 1}`
+          }).catch(() => {});
+        } else {
+          throw err; // non-recoverable or single key
+        }
+      }
+    }
+
+    if (!audioBase64) {
+      throw lastError || new Error('Tất cả API key đều thất bại');
+    }
 
     // Send audio chunk to content script for playback
     await chrome.tabs.sendMessage(tabId, {
@@ -61,7 +93,9 @@ async function callGeminiTts(text, apiKey, voiceName) {
 
   if (!response.ok) {
     const errData = await response.json().catch(() => ({}));
-    throw new Error(errData.error?.message || `Gemini API error: ${response.status}`);
+    const err = new Error(errData.error?.message || `Gemini API error: ${response.status}`);
+    err.status = response.status;
+    throw err;
   }
 
   const data = await response.json();
@@ -162,12 +196,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       chrome.tts.stop();
 
       const tabId = sender.tab?.id;
-      if (!request.apiKey) {
+      const apiKeys = request.apiKeys || (request.apiKey ? [request.apiKey] : []);
+      if (apiKeys.length === 0) {
         sendResponse({ success: false, error: 'Chưa cung cấp API key' });
         break;
       }
 
-      geminiTtsSpeak(request.text, request.apiKey, request.geminiVoice, tabId)
+      geminiTtsSpeak(request.text, apiKeys, request.activeKeyIndex || 0, request.geminiVoice, tabId)
         .then(() => {
           sendResponse({ success: true });
         })

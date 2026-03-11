@@ -13,7 +13,7 @@ Dưới đây là kế hoạch phát triển và những mục tiêu mở rộng
   - Hỗ trợ thêm các trang web đọc truyện phổ biến khác ở Việt Nam (VD: TruyenQQ, TangThuVien, Wattpad...).
   - Thêm chức năng cho phép người dùng tự định nghĩa vùng (CSS Selector) chứa văn bản truyện trên các trang chưa được hỗ trợ sẵn.
 
-- [ ] **Quản lý đa dạng Gemini API Key**
+- [x] **Quản lý đa dạng Gemini API Key**
   - Hỗ trợ lưu trữ nhiều API key.
   - Tự động chuyển đổi sang key dự phòng khi một key báo lỗi hết quota (vượt quá giới hạn của bản miễn phí).
 

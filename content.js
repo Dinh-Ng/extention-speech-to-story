@@ -28,7 +28,9 @@
     pitch: 1.0,
     voiceName: '',
     engine: 'chrome',
-    geminiApiKey: '',
+    geminiApiKeys: [],       // Array of API key strings
+    geminiActiveKeyIndex: 0, // Currently active key index
+    geminiApiKey: '',        // Legacy (migration support)
     geminiVoice: 'Kore',
     theme: 'system'
   };
@@ -47,6 +49,12 @@
     chrome.storage.local.get('ttsSettings', (result) => {
       if (result.ttsSettings) {
         ttsSettings = { ...ttsSettings, ...result.ttsSettings };
+        // Migrate legacy single key to array
+        if (ttsSettings.geminiApiKey && (!ttsSettings.geminiApiKeys || ttsSettings.geminiApiKeys.length === 0)) {
+          ttsSettings.geminiApiKeys = [ttsSettings.geminiApiKey];
+          ttsSettings.geminiApiKey = '';
+          saveSettings();
+        }
       }
       if (callback) callback();
     });
@@ -378,28 +386,93 @@
     geminiSection.id = 'sts-gemini-section';
     geminiSection.style.display = ttsSettings.engine === 'gemini' ? 'block' : 'none';
 
-    const apiKeyRow = document.createElement('div');
-    apiKeyRow.className = 'sts-setting-row';
-    apiKeyRow.innerHTML = `<div class="sts-setting-label">API Key</div>`;
+    // --- Multi API Key Manager ---
+    const keyManagerRow = document.createElement('div');
+    keyManagerRow.className = 'sts-setting-row';
+    keyManagerRow.innerHTML = `<div class="sts-setting-label">API Keys <span class="sts-setting-value" id="sts-key-count">${ttsSettings.geminiApiKeys.length}</span></div>`;
 
-    const apiKeyWrap = document.createElement('div');
-    apiKeyWrap.className = 'sts-apikey-wrap';
-    const apiKeyInput = document.createElement('input');
-    apiKeyInput.type = 'password';
-    apiKeyInput.id = 'sts-gemini-apikey';
-    apiKeyInput.className = 'sts-text-input';
-    apiKeyInput.placeholder = 'Nhập Google AI Studio Key';
-    apiKeyInput.value = ttsSettings.geminiApiKey || '';
-    apiKeyInput.addEventListener('change', () => { ttsSettings.geminiApiKey = apiKeyInput.value.trim(); saveSettings(); });
+    const keyList = document.createElement('div');
+    keyList.id = 'sts-key-list';
+    keyList.className = 'sts-key-list';
 
-    const toggleVis = document.createElement('button');
-    toggleVis.className = 'sts-apikey-toggle';
-    toggleVis.innerHTML = '👁';
-    toggleVis.addEventListener('click', () => { apiKeyInput.type = apiKeyInput.type === 'password' ? 'text' : 'password'; });
+    function renderKeyList() {
+      keyList.innerHTML = '';
+      const countEl = document.getElementById('sts-key-count');
+      if (countEl) countEl.textContent = ttsSettings.geminiApiKeys.length;
 
-    apiKeyWrap.append(apiKeyInput, toggleVis);
-    apiKeyRow.appendChild(apiKeyWrap);
+      ttsSettings.geminiApiKeys.forEach((key, idx) => {
+        const item = document.createElement('div');
+        item.className = 'sts-key-item';
+        if (idx === ttsSettings.geminiActiveKeyIndex) item.classList.add('sts-key-active');
 
+        const label = document.createElement('span');
+        label.className = 'sts-key-label';
+        label.textContent = `Key ${idx + 1}`;
+
+        const masked = document.createElement('span');
+        masked.className = 'sts-key-masked';
+        masked.textContent = key.slice(0, 6) + '••••' + key.slice(-4);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'sts-key-remove';
+        removeBtn.textContent = '✕';
+        removeBtn.title = 'Xoá key này';
+        removeBtn.addEventListener('click', () => {
+          ttsSettings.geminiApiKeys.splice(idx, 1);
+          if (ttsSettings.geminiActiveKeyIndex >= ttsSettings.geminiApiKeys.length) {
+            ttsSettings.geminiActiveKeyIndex = Math.max(0, ttsSettings.geminiApiKeys.length - 1);
+          }
+          saveSettings();
+          renderKeyList();
+        });
+
+        item.append(label, masked, removeBtn);
+        item.addEventListener('click', (e) => {
+          if (e.target === removeBtn) return;
+          ttsSettings.geminiActiveKeyIndex = idx;
+          saveSettings();
+          renderKeyList();
+        });
+        keyList.appendChild(item);
+      });
+
+      if (ttsSettings.geminiApiKeys.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'sts-key-empty';
+        empty.textContent = 'Chưa có API Key nào.';
+        keyList.appendChild(empty);
+      }
+    }
+
+    // Add key row
+    const addKeyWrap = document.createElement('div');
+    addKeyWrap.className = 'sts-apikey-wrap';
+    const addKeyInput = document.createElement('input');
+    addKeyInput.type = 'password';
+    addKeyInput.className = 'sts-text-input';
+    addKeyInput.placeholder = 'Dán API Key mới...';
+    const addKeyBtn = document.createElement('button');
+    addKeyBtn.className = 'sts-apikey-toggle';
+    addKeyBtn.textContent = '＋';
+    addKeyBtn.title = 'Thêm key';
+    addKeyBtn.addEventListener('click', () => {
+      const val = addKeyInput.value.trim();
+      if (!val) return;
+      if (ttsSettings.geminiApiKeys.includes(val)) {
+        addKeyInput.value = '';
+        return;
+      }
+      ttsSettings.geminiApiKeys.push(val);
+      addKeyInput.value = '';
+      saveSettings();
+      renderKeyList();
+    });
+    addKeyWrap.append(addKeyInput, addKeyBtn);
+
+    keyManagerRow.append(keyList, addKeyWrap);
+    renderKeyList();
+
+    // Gemini Voice
     const gVoiceRow = document.createElement('div');
     gVoiceRow.className = 'sts-setting-row';
     gVoiceRow.innerHTML = `<div class="sts-setting-label">Giọng Gemini</div>`;
@@ -415,7 +488,7 @@
     gVoiceSelect.addEventListener('change', () => { ttsSettings.geminiVoice = gVoiceSelect.value; saveSettings(); });
     gVoiceRow.appendChild(gVoiceSelect);
 
-    geminiSection.append(apiKeyRow, gVoiceRow);
+    geminiSection.append(keyManagerRow, gVoiceRow);
     body.append(chromeSection, geminiSection);
 
     // Load chrome voices async
@@ -510,8 +583,8 @@
     if (!currentText) return;
 
     if (ttsSettings.engine === 'gemini') {
-      if (!ttsSettings.geminiApiKey) {
-        els.status.textContent = 'Vui lòng nhập API Key trong cài đặt.';
+      if (!ttsSettings.geminiApiKeys || ttsSettings.geminiApiKeys.length === 0) {
+        els.status.textContent = 'Vui lòng thêm API Key trong cài đặt.';
         return;
       }
 
@@ -532,7 +605,8 @@
       chrome.runtime.sendMessage({
         action: 'gemini-tts-speak',
         text: currentText,
-        apiKey: ttsSettings.geminiApiKey,
+        apiKeys: ttsSettings.geminiApiKeys,
+        activeKeyIndex: ttsSettings.geminiActiveKeyIndex || 0,
         geminiVoice: ttsSettings.geminiVoice
       }, (resp) => {
         if (resp && !resp.success && resp.error) {
@@ -649,6 +723,12 @@
         if (message.isLast) geminiAllChunksReceived = true;
         audioQueue.push(message);
         if (!isPlayingGemini && !geminiStopped) processAudioQueue();
+        break;
+
+      case 'gemini-key-switch':
+        ttsSettings.geminiActiveKeyIndex = message.newKeyIndex;
+        saveSettings();
+        els.status.textContent = `${message.reason} → chuyển sang ${message.keyLabel}`;
         break;
 
       case 'tts-event':

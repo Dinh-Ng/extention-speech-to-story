@@ -452,3 +452,79 @@ select option {
   border-color: var(--sts-text-main);
   font-weight: 600;
 }
+
+/* ===== Multi API Key List ===== */
+.sts-key-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.sts-key-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--sts-bg-input);
+  border: 1px solid var(--sts-border-light);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sts-key-item:hover {
+  background: var(--sts-bg-hover);
+  border-color: var(--sts-border);
+}
+
+.sts-key-item.sts-key-active {
+  border-color: #4285f4;
+  background: rgba(66, 133, 244, 0.1);
+}
+
+.sts-key-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sts-text-main);
+  min-width: 40px;
+}
+
+.sts-key-active .sts-key-label {
+  color: #4285f4;
+}
+
+.sts-key-masked {
+  flex: 1;
+  font-size: 11px;
+  color: var(--sts-text-muted);
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sts-key-remove {
+  background: transparent;
+  border: none;
+  color: var(--sts-text-dim);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.sts-key-remove:hover {
+  background: rgba(240, 71, 71, 0.15);
+  color: #f04747;
+}
+
+.sts-key-empty {
+  font-size: 12px;
+  color: var(--sts-text-dim);
+  text-align: center;
+  padding: 8px;
+  font-style: italic;
+}
