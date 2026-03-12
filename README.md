@@ -13,7 +13,13 @@
   - Thanh tiến trình trực quan hiển thị phần trăm khi tạo audio từ AI.
 - **Tính năng điều khiển đầy đủ**: Phát (Play), Tạm dừng (Pause), Tiếp tục (Resume), Dừng (Stop) và Tải lại chương (Reload).
 - **Hỗ trợ truyện siêu dài**: Đối với engine Gemini, hệ thống tự động nhận diện và chia nhỏ văn bản vượt giới hạn giúp đảm bảo đọc trọn vẹn cả những chương truyện.
-- **Voice Consistency**: Tự động áp dụng lệnh "System Instruction" cho Gemini AI, đảm bảo mô hình giữ một giọng đọc ổn định xuyên suốt toàn bộ diễn biến, không tự ý thay đổi giọng điệu ở các câu chèn hội thoại.
+- **Quản lý đa dạng Gemini API Key**: Hỗ trợ lưu nhiều API key cùng lúc. Tự động chuyển đổi sang key dự phòng khi gặp lỗi Quota (429) hoặc lỗi server (500/503).
+- **Voice Consistency**: Tự động áp dụng lệnh "System Instruction" cho Gemini AI, đảm bảo mô hình giữ một giọng đọc ổn định xuyên suốt.
+
+## Tài liệu dự án
+
+- [CHANGELOG.md](./CHANGELOG.md): Theo dõi lịch sử thay đổi qua các phiên bản.
+- [roadmap.md](./roadmap.md): Kế hoạch phát triển các tính năng trong tương lai.
 
 ## Hướng dẫn cài đặt
 
@@ -37,8 +43,9 @@ Extension này chưa được tải lên Chrome Web Store. Để sử dụng, b�
 4. **Nếu bạn muốn dùng chế độ AI (Gemini TTS)**:
    - Click vào thẻ **Gemini** ở phần đầu Card để đổi công cụ.
    - Bấm ⚙ *Cài đặt âm thanh*.
-   - Nhập **Google AI Studio API Key** của bạn vào ô tương ứng. (Lấy API Key miễn phí tại [Google AI Studio](https://aistudio.google.com/apikey)).
+   - Nhập **Google AI Studio API Key** của bạn vào ô tương ứng. Bạn có thể thêm nhiều key để hệ thống tự động dự phòng. (Lấy API Key miễn phí tại [Google AI Studio](https://aistudio.google.com/apikey)).
    - Chọn một trong số 30 giọng đọc.
+   - Click chọn key muốn sử dụng (key đang hoạt động sẽ có viền màu xanh).
    - Bấm ▶ (Play). Extension sẽ phân giải văn bản và tự động đồng bộ hóa để đọc cho bạn với tiến trình phần trăm rõ ràng.
 
 ## Cài đặt riêng tư & API
