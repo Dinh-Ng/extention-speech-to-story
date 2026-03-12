@@ -23,14 +23,22 @@
 
 ## Hướng dẫn cài đặt
 
-Extension này chưa được tải lên Chrome Web Store. Để sử dụng, bạn cần cài đặt qua Developer Mode của Chrome:
+Extension này chưa được tải lên Chrome Web Store. Bạn có thể cài đặt bằng một trong hai cách sau:
 
-1. Tải toàn bộ source code của extension này về máy hoặc `git clone` repository này.
-2. Mở trình duyệt Chrome và dán vào thanh địa chỉ: `chrome://extensions/`
-3. Bật **Chế độ dành cho nhà phát triển** (Developer mode) ở góc trên bên phải màn hình.
-4. Nhấn vào nút **Tải tiện ích đã giải nén** (Load unpacked).
-5. Chọn thư mục chứa source code của extension (thư mục chứa file `manifest.json`).
-6. Extension đã sẵn sàng sử dụng!
+### Cách 1: Cài đặt từ bản Release (Khuyên dùng)
+1. Truy cập vào mục [Releases](https://github.com/Dinh-Ng/extention-speech-to-story/releases) trên GitHub.
+2. Tải file `.zip` của phiên bản mới nhất (ví dụ: `speech-to-story-v2.5.0.zip`).
+3. Giải nén file vừa tải về một thư mục trên máy tính.
+
+### Cách 2: Cài đặt từ mã nguồn (Dành cho Developer)
+1. Tải toàn bộ mã nguồn (`git clone` hoặc tải Zip) và giải nén.
+
+### Các bước kích hoạt trên Chrome:
+1. Mở trình duyệt Chrome và dán vào thanh địa chỉ: `chrome://extensions/`
+2. Bật **Chế độ dành cho nhà phát triển** (Developer mode) ở góc trên bên phải màn hình.
+3. Nhấn vào nút **Tải tiện ích đã giải nén** (Load unpacked).
+4. Chọn thư mục chứa extension (thư mục có chứa file `manifest.json`).
+5. Extension đã sẵn sàng sử dụng!
 
 ## Hướng dẫn sử dụng
 
