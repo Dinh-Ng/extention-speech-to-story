@@ -47,24 +47,94 @@
     'Quasar', 'Rastaban', 'Sadachbia', 'Talos', 'Umbriel'
   ];
 
+  // Per-story config map and active story id
+  let storySettingsMap = {};
+  let currentStoryId = '';
+
+  // Helper to extract story slug from URL 
+  // e.g. "https://truyenfull.vision/pham-nhan-tu-tien/chuong-1/" -> "pham-nhan-tu-tien"
+  function getStoryIdFromUrl() {
+    try {
+      const pathSegments = window.location.pathname.split('/').filter(p => p);
+      if (pathSegments.length > 0) {
+        return pathSegments[0]; // first segment is usually the story slug
+      }
+    } catch (e) {}
+    return 'default_story';
+  }
+
   // ---- Load/Save settings ----
   function loadSettings(callback) {
-    chrome.storage.local.get('ttsSettings', (result) => {
+    currentStoryId = getStoryIdFromUrl();
+
+    chrome.storage.local.get(['ttsSettings', 'storySettingsMap'], (result) => {
       if (result.ttsSettings) {
-        ttsSettings = { ...ttsSettings, ...result.ttsSettings };
+        // Load global settings
+        ttsSettings.geminiApiKeys = result.ttsSettings.geminiApiKeys || ttsSettings.geminiApiKeys;
+        ttsSettings.geminiActiveKeyIndex = result.ttsSettings.geminiActiveKeyIndex ?? ttsSettings.geminiActiveKeyIndex;
+        ttsSettings.geminiApiKey = result.ttsSettings.geminiApiKey || '';
+        ttsSettings.theme = result.ttsSettings.theme || ttsSettings.theme;
+        ttsSettings.isMiniMode = result.ttsSettings.isMiniMode ?? ttsSettings.isMiniMode;
+
         // Migrate legacy single key to array
         if (ttsSettings.geminiApiKey && (!ttsSettings.geminiApiKeys || ttsSettings.geminiApiKeys.length === 0)) {
           ttsSettings.geminiApiKeys = [ttsSettings.geminiApiKey];
           ttsSettings.geminiApiKey = '';
           saveSettings();
         }
+
+        // Keep local fallback defaults for engine/voice options in case it's a new story
+        ttsSettings.rate = result.ttsSettings.rate ?? ttsSettings.rate;
+        ttsSettings.pitch = result.ttsSettings.pitch ?? ttsSettings.pitch;
+        ttsSettings.voiceName = result.ttsSettings.voiceName || ttsSettings.voiceName;
+        ttsSettings.engine = result.ttsSettings.engine || ttsSettings.engine;
+        ttsSettings.geminiVoice = result.ttsSettings.geminiVoice || ttsSettings.geminiVoice;
       }
+
+      if (result.storySettingsMap) {
+        storySettingsMap = result.storySettingsMap;
+        
+        // If specific settings exist for this story, override the local fallback state
+        if (storySettingsMap[currentStoryId]) {
+          const s = storySettingsMap[currentStoryId];
+          ttsSettings.engine = s.engine || ttsSettings.engine;
+          ttsSettings.voiceName = s.voiceName || ttsSettings.voiceName;
+          ttsSettings.geminiVoice = s.geminiVoice || ttsSettings.geminiVoice;
+          ttsSettings.rate = s.rate ?? ttsSettings.rate;
+          ttsSettings.pitch = s.pitch ?? ttsSettings.pitch;
+        }
+      }
+
       if (callback) callback();
     });
   }
 
   function saveSettings() {
-    chrome.storage.local.set({ ttsSettings });
+    // Save to the memory map
+    storySettingsMap[currentStoryId] = {
+      engine: ttsSettings.engine,
+      voiceName: ttsSettings.voiceName,
+      geminiVoice: ttsSettings.geminiVoice,
+      rate: ttsSettings.rate,
+      pitch: ttsSettings.pitch
+    };
+
+    // Save global settings and the updated map to Chrome storage
+    chrome.storage.local.set({ 
+      ttsSettings: {
+        geminiApiKeys: ttsSettings.geminiApiKeys,
+        geminiActiveKeyIndex: ttsSettings.geminiActiveKeyIndex,
+        theme: ttsSettings.theme,
+        isMiniMode: ttsSettings.isMiniMode,
+        // Legacy fallbacks
+        rate: ttsSettings.rate,
+        pitch: ttsSettings.pitch,
+        voiceName: ttsSettings.voiceName,
+        engine: ttsSettings.engine,
+        geminiVoice: ttsSettings.geminiVoice
+      },
+      storySettingsMap: storySettingsMap
+    });
   }
 
   // ---- Gemini Audio Playback ----
@@ -455,6 +525,12 @@
   function createSettingsBody() {
     const body = document.createElement('div');
     body.className = 'sts-settings-body';
+    
+    // Hint text
+    const hintText = document.createElement('div');
+    hintText.className = 'sts-settings-hint';
+    hintText.textContent = '* Tốc độ đọc, Giọng và Engine được lưu riêng biệt cho từng truyện.';
+    body.appendChild(hintText);
 
     // Theme Section (Top of settings)
     const themeRow = document.createElement('div');

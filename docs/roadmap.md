@@ -34,7 +34,7 @@ Dưới đây là kế hoạch phát triển và những mục tiêu mở rộng
   - Hiệu ứng sóng âm chạy động trên Card UI khi đang phát audiobook.
 - [ ] **Đồng bộ tiến trình đọc (Sync Reading Progress)**
   - Lưu và đồng bộ tự động tiến độ nghe/đọc trên nhiều thiết bị (sử dụng `chrome.storage.sync` hoặc liên kết tài khoản).
-- [ ] **Lưu cấu hình Custom Voice cho từng trang/truyện**
+- [x] **Lưu cấu hình Custom Voice cho từng trang/truyện**
   - Ghi nhớ tùy chọn Voice của người dùng cho từng thể loại truyện.
 - [ ] **Tối ưu khả năng đọc Offline (Offline TTS Mode)**
   - Cải thiện công cụ đọc bằng cách lưu lại bộ đệm âm thanh tải trước (preload buffer).

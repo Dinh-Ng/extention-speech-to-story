@@ -370,6 +370,16 @@
 }
 
 /* --- Settings Inputs --- */
+.sts-settings-hint {
+  font-size: 11px;
+  color: var(--sts-text-dim);
+  font-style: italic;
+  margin-bottom: 12px;
+  text-align: center;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--sts-border-light);
+}
+
 .sts-setting-row {
   margin-bottom: 16px;
 }
