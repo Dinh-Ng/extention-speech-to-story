@@ -17,8 +17,21 @@ Dưới đây là kế hoạch phát triển và những mục tiêu mở rộng
   - Hỗ trợ lưu trữ nhiều API key.
   - Tự động chuyển đổi sang key dự phòng khi một key báo lỗi hết quota (vượt quá giới hạn của bản miễn phí).
 
+- [ ] **Tự động chuyển chương (Auto-Next Chapter)**
+  - Tự động nhận diện nút "Chương tiếp" và chuyển trang khi đọc xong hết nội dung chương hiện tại.
+- [ ] **Phím tắt điều khiển (Keyboard Shortcuts)**
+  - Gán phím tắt nhanh (vd: Alt + P, Alt + N) để điều khiển trình phát mà không cần dùng chuột.
+- [ ] **Hẹn giờ tắt (Sleep Timer)**
+  - Tính năng tự động dừng đọc sau một khoảng thời gian được đặt trước (15, 30, 60 phút).
+
 ## Mục tiêu dài hạn (Long-term Goals)
 
+- [ ] **Highlight văn bản Karaoke (Karaoke Highlighting)**
+  - Vừa đọc vừa highlight câu tương ứng trên trang web giúp người dùng dễ dàng theo dõi.
+- [ ] **Chế độ trình phát thu nhỏ (Mini Player Mode)**
+  - Giao diện player siêu tối gọn để tiết kiệm diện tích màn hình.
+- [ ] **Hiệu ứng sóng âm sống động (Wave Visualizer)**
+  - Hiệu ứng sóng âm chạy động trên Card UI khi đang phát audiobook.
 - [ ] **Đồng bộ tiến trình đọc (Sync Reading Progress)**
   - Lưu và đồng bộ tự động tiến độ nghe/đọc trên nhiều thiết bị (sử dụng `chrome.storage.sync` hoặc liên kết tài khoản).
 - [ ] **Lưu cấu hình Custom Voice cho từng trang/truyện**
