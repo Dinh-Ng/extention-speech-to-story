@@ -34,7 +34,8 @@
     geminiActiveKeyIndex: 0, // Currently active key index
     geminiApiKey: '',        // Legacy (migration support)
     geminiVoice: 'Kore',
-    theme: 'system'
+    theme: 'system',
+    isMiniMode: false
   };
 
   const GEMINI_VOICES = [
@@ -304,6 +305,18 @@
     } else {
       els.card.classList.remove('sts-light-theme');
     }
+
+    if (ttsSettings.isMiniMode) {
+      els.card.classList.add('sts-mini');
+      if (els.miniBtn) els.miniBtn.innerHTML = '⛶'; // Expand icon
+      if (els.settingsBody) els.settingsBody.classList.remove('sts-open');
+      if (els.settingsToggle) els.settingsToggle.classList.remove('sts-open');
+      settingsOpen = false;
+    } else {
+      els.card.classList.remove('sts-mini');
+      if (els.miniBtn) els.miniBtn.innerHTML = '—'; // Minimize icon
+    }
+
     updateThemeUI();
   }
 
@@ -356,7 +369,13 @@
     btnGemini.dataset.engine = 'gemini';
 
     engineToggle.append(btnChrome, btnGemini);
-    header.append(title, engineToggle);
+
+    const miniBtn = document.createElement('button');
+    miniBtn.className = 'sts-mini-btn';
+    miniBtn.innerHTML = ttsSettings.isMiniMode ? '⛶' : '—';
+    miniBtn.title = 'Thu nhỏ / Phóng to';
+
+    header.append(title, engineToggle, miniBtn);
 
     // 2. Main Playback Controls
     const controlsSection = document.createElement('div');
@@ -418,6 +437,7 @@
     // Return elements reference
     return {
       card,
+      miniBtn,
       btnChrome,
       btnGemini,
       playBtn,
@@ -790,6 +810,13 @@
 
     els.btnChrome.addEventListener('click', () => switchEngine('chrome'));
     els.btnGemini.addEventListener('click', () => switchEngine('gemini'));
+
+    // Mini Toggle Logic
+    els.miniBtn.addEventListener('click', () => {
+      ttsSettings.isMiniMode = !ttsSettings.isMiniMode;
+      saveSettings();
+      applyTheme(); // applyTheme handles the class toggle
+    });
   }
 
   // Background message listener

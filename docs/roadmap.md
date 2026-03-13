@@ -28,7 +28,7 @@ Dưới đây là kế hoạch phát triển và những mục tiêu mở rộng
 
 - [ ] **Highlight văn bản Karaoke (Karaoke Highlighting)**
   - Vừa đọc vừa highlight câu tương ứng trên trang web giúp người dùng dễ dàng theo dõi.
-- [ ] **Chế độ trình phát thu nhỏ (Mini Player Mode)**
+- [x] **Chế độ trình phát thu nhỏ (Mini Player Mode)**
   - Giao diện player siêu tối gọn để tiết kiệm diện tích màn hình.
 - [x] **Hiệu ứng sóng âm sống động (Wave Visualizer)**
   - Hiệu ứng sóng âm chạy động trên Card UI khi đang phát audiobook.

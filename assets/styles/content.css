@@ -150,7 +150,70 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 12px rgba(66, 133, 244, 0.4);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s, width 0.3s, height 0.3s;
+}
+
+/* --- Mini Mode Styles --- */
+.sts-mini-btn {
+  background: transparent;
+  border: none;
+  color: var(--sts-text-dim);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
+.sts-mini-btn:hover {
+  background: var(--sts-bg-hover);
+  color: var(--sts-text-main);
+}
+
+.sts-card.sts-mini {
+  width: auto;
+  min-width: 180px;
+  border-radius: 24px;
+}
+.sts-card.sts-mini .sts-title,
+.sts-card.sts-mini .sts-engine-toggle,
+.sts-card.sts-mini .sts-settings-toggle,
+.sts-card.sts-mini .sts-settings-body,
+.sts-card.sts-mini #sts-status,
+.sts-card.sts-mini .sts-visualizer {
+  display: none !important;
+}
+.sts-card.sts-mini .sts-header {
+  padding: 8px 12px;
+  border-bottom: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: transparent;
+  z-index: 10;
+}
+.sts-card.sts-mini .sts-controls-section {
+  padding: 12px 36px 16px 12px;
+  gap: 8px;
+}
+.sts-card.sts-mini .sts-btn-primary {
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+}
+.sts-card.sts-mini .sts-btn-icon {
+  width: 30px;
+  height: 30px;
+  font-size: 14px;
+}
+.sts-card.sts-mini .sts-status-wrap {
+  margin-top: 0;
+}
+.sts-card.sts-mini #sts-progress-container {
+  height: 4px;
 }
 
 .sts-btn-primary:hover:not(:disabled) {
