@@ -30,7 +30,7 @@ Dưới đây là kế hoạch phát triển và những mục tiêu mở rộng
   - Vừa đọc vừa highlight câu tương ứng trên trang web giúp người dùng dễ dàng theo dõi.
 - [ ] **Chế độ trình phát thu nhỏ (Mini Player Mode)**
   - Giao diện player siêu tối gọn để tiết kiệm diện tích màn hình.
-- [ ] **Hiệu ứng sóng âm sống động (Wave Visualizer)**
+- [x] **Hiệu ứng sóng âm sống động (Wave Visualizer)**
   - Hiệu ứng sóng âm chạy động trên Card UI khi đang phát audiobook.
 - [ ] **Đồng bộ tiến trình đọc (Sync Reading Progress)**
   - Lưu và đồng bộ tự động tiến độ nghe/đọc trên nhiều thiết bị (sử dụng `chrome.storage.sync` hoặc liên kết tài khoản).

@@ -12,6 +12,7 @@
 
   // Gemini audio playback state
   let audioContext = null;
+  let analyser = null;
   let currentSource = null;
   let audioQueue = [];
   let isPlayingGemini = false;
@@ -21,6 +22,7 @@
   let geminiReceivedChunks = 0;
   let geminiAllChunksReceived = false;
   let geminiPlayedChunks = 0;
+  let animationFrameId = null;
 
   // Default settings
   let ttsSettings = {
@@ -68,6 +70,9 @@
   function getAudioContext() {
     if (!audioContext) {
       audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 64; // Small size for simple 32-bar visualizer
+      analyser.connect(audioContext.destination);
     }
     return audioContext;
   }
@@ -98,7 +103,7 @@
 
         const source = ctx.createBufferSource();
         source.buffer = audioBuffer;
-        source.connect(ctx.destination);
+        source.connect(analyser); // Connect to analyser instead of destination
         currentSource = source;
 
         source.onended = () => {
@@ -113,9 +118,105 @@
     });
   }
 
+  // ---- Visualizer Logic ----
+  function startVisualizer() {
+    if (!els || !els.visualizerCanvas || !analyser) return;
+    els.visualizerCanvas.style.display = 'block';
+
+    const canvas = els.visualizerCanvas;
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    
+    // We only need about half of the fftSize data for a good look
+    const bufferLength = analyser.frequencyBinCount; 
+    const dataArray = new Uint8Array(bufferLength);
+    
+    const barWidth = 3;
+    const barGap = 1;
+    const barsCount = Math.floor(width / (barWidth + barGap));
+
+    function draw() {
+      if (!isPlayingGemini || isPaused) {
+        animationFrameId = null;
+        return;
+      }
+      animationFrameId = requestAnimationFrame(draw);
+      analyser.getByteFrequencyData(dataArray);
+
+      ctx.clearRect(0, 0, width, height);
+
+      // determine color based on theme
+      const isLight = ttsSettings.theme === 'light' || 
+                      (ttsSettings.theme === 'system' && !window.matchMedia('(prefers-color-scheme: dark)').matches);
+      
+      const gradient = ctx.createLinearGradient(0, height, 0, 0);
+      if (isLight) {
+        gradient.addColorStop(0, '#34a853'); // green
+        gradient.addColorStop(1, '#4285f4'); // blue
+      } else {
+        gradient.addColorStop(0, '#4285f4'); // blue
+        gradient.addColorStop(1, '#a8c7fa'); // light blue
+      }
+
+      ctx.fillStyle = gradient;
+
+      for (let i = 0; i < barsCount; i++) {
+        // map index to frequency data
+        const dataIndex = Math.floor(i * (bufferLength / barsCount));
+        const value = dataArray[dataIndex];
+        
+        // map 0-255 to canvas height
+        const percent = value / 255;
+        const barHeight = Math.max(2, percent * height); // min 2px height
+        
+        const x = i * (barWidth + barGap);
+        const y = height - barHeight;
+        
+        // Draw with rounded top
+        ctx.beginPath();
+        ctx.roundRect(x, y, barWidth, barHeight, [2, 2, 0, 0]);
+        ctx.fill();
+      }
+    }
+    
+    if (!animationFrameId) {
+      draw();
+    }
+  }
+
+  function stopVisualizer() {
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+    if (els && els.visualizerCanvas) {
+      const ctx = els.visualizerCanvas.getContext('2d');
+      ctx.clearRect(0, 0, els.visualizerCanvas.width, els.visualizerCanvas.height);
+      els.visualizerCanvas.style.display = 'none';
+    }
+  }
+
+  // ---- Progress UI ----
+  function updateProgressBar(pct) {
+    if (!els || !els.progressWrap || !els.progressBar) return;
+    els.progressWrap.style.display = 'block';
+    els.progressBar.style.width = Math.min(100, Math.max(0, pct)) + '%';
+  }
+
+  function hideProgressBar() {
+    if (els && els.progressWrap) {
+      els.progressWrap.style.display = 'none';
+      els.progressBar.style.width = '0%';
+    }
+    stopVisualizer(); // ensure visualizer hides when progress bar hides
+  }
+
   async function processAudioQueue() {
     if (isPlayingGemini) return;
     isPlayingGemini = true;
+
+    startVisualizer();
 
     while (!geminiStopped) {
       if (audioQueue.length > 0) {
@@ -137,6 +238,7 @@
     }
 
     isPlayingGemini = false;
+    stopVisualizer();
 
     if (!geminiStopped && ttsSettings.engine === 'gemini') {
       isSpeaking = false;
@@ -159,7 +261,9 @@
       currentSource = null;
     }
     isPlayingGemini = false;
+    isPaused = false;
     hideProgressBar();
+    stopVisualizer();
   }
 
   function pauseGeminiPlayback() {
@@ -168,6 +272,7 @@
       pauseTime = ctx.currentTime;
       ctx.suspend();
     }
+    stopVisualizer();
   }
 
   function resumeGeminiPlayback() {
@@ -175,19 +280,8 @@
     if (ctx.state === 'suspended') {
       ctx.resume();
     }
-  }
-
-  // ---- Progress UI ----
-  function updateProgressBar(pct) {
-    if (!els || !els.progressWrap || !els.progressBar) return;
-    els.progressWrap.style.display = 'block';
-    els.progressBar.style.width = Math.min(100, Math.max(0, pct)) + '%';
-  }
-
-  function hideProgressBar() {
-    if (els && els.progressWrap) {
-      els.progressWrap.style.display = 'none';
-      els.progressBar.style.width = '0%';
+    if (isPlayingGemini) {
+      startVisualizer();
     }
   }
 
@@ -302,7 +396,12 @@
     progressBar.id = 'sts-progress-bar';
     progressWrap.appendChild(progressBar);
 
-    statusWrap.append(statusText, progressWrap);
+    const visualizerCanvas = document.createElement('canvas');
+    visualizerCanvas.className = 'sts-visualizer';
+    visualizerCanvas.width = 120;
+    visualizerCanvas.height = 24;
+
+    statusWrap.append(statusText, visualizerCanvas, progressWrap);
     controlsSection.append(btnRow, statusWrap);
 
     // 3. Expandable Settings
@@ -327,6 +426,7 @@
       status: statusText,
       progressWrap,
       progressBar,
+      visualizerCanvas,
       settingsToggle,
       settingsBody
     };
