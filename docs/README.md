@@ -9,9 +9,12 @@
   - **Gemini TTS (AI Voice)**: Sử dụng các mô hình ngôn ngữ AI của Google (Gemini 2.5) để tạo ra giọng đọc truyền cảm xúc, tự nhiên như audiobook. Hỗ trợ tới 30 giọng đọc AI khác nhau chuyên biệt.
 - **Giao diện hiện đại**:
   - Giao diện dạng Floating Card (thẻ nổi) đẹp mắt ở góc màn hình.
+  - **Mini Player Mode**: Thu nhỏ giao diện về dạng "viên nang" cực gọn chỉ hiển thị nút điều khiển thiết yếu.
   - Hỗ trợ đổi giao diện **Sáng/Tối** (hoặc tự động theo hệ thống).
+  - **Wave Visualizer**: Hiệu ứng sóng âm động tương ứng với giọng đọc (chỉ dành cho Gemini).
   - Thanh tiến trình trực quan hiển thị phần trăm khi tạo audio từ AI.
 - **Tính năng điều khiển đầy đủ**: Phát (Play), Tạm dừng (Pause), Tiếp tục (Resume), Dừng (Stop) và Tải lại chương (Reload).
+- **Lưu cấu hình theo truyện**: Tự động nhớ giọng đọc và tốc độ riêng cho từng bộ truyện khác nhau. Khách hàng không cần chỉnh lại giọng khi đổi từ truyện tiên hiệp sang ngôn tình.
 - **Hỗ trợ truyện siêu dài**: Đối với engine Gemini, hệ thống tự động nhận diện và chia nhỏ văn bản vượt giới hạn giúp đảm bảo đọc trọn vẹn cả những chương truyện.
 - **Quản lý đa dạng Gemini API Key**: Hỗ trợ lưu nhiều API key cùng lúc. Tự động chuyển đổi sang key dự phòng khi gặp lỗi Quota (429) hoặc lỗi server (500/503).
 - **Voice Consistency**: Tự động áp dụng lệnh "System Instruction" cho Gemini AI, đảm bảo mô hình giữ một giọng đọc ổn định xuyên suốt.
