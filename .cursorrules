@@ -3,7 +3,16 @@ When you (the AI) are asked to generate a commit message, you must strictly foll
 
 1. **Title (First line):**
    - Must be short and concise, strictly UNDER 50 characters.
-   - Must use Conventional Commits format: `<type>: <emoji> <Subject in imperative mood>` (e.g., `feat: 🎸 Improve UI`, `fix: 🐛 Resolve crash`, `docs: 📝 Update README`).
+   - Must use Conventional Commits format: `<type>: <emoji> <Subject in imperative mood>`.
+   - **Strict Emoji Rules:** Use ONLY the following emojis for each type:
+     - `feat`: ✨ (New feature)
+     - `fix`: 🐛 (Bug fix)
+     - `docs`: 📝 (Documentation)
+     - `style`: 💄 (Formatting, missing semi colons, etc; no code change)
+     - `refactor`: 🎨 (Refactoring production code)
+     - `test`: ✅ (Adding missing tests, refactoring tests)
+     - `chore`: 🔨 (Updating grunt tasks etc; no production code change)
+     - `perf`: ⚡️ (Performance improvement)
    
 2. **Body (Blank line after title, then details):**
    - Must contain a detailed, full explanation of the changes made.
@@ -11,7 +20,7 @@ When you (the AI) are asked to generate a commit message, you must strictly foll
 
 ### Example:
 ```
-feat: 🎸 Improve UI
+feat: ✨ Add audio wave visualizer
 
-Improve UI with better layout, add conversion buttons and clipboard functionality. This makes the interface more spacious and intuitive for users to operate.
+Implemented a real-time audio wave visualizer for Gemini TTS using the Web Audio API. This provides visual feedback to the user while the AI is speaking, making the interface feel more alive and responsive.
 ```
