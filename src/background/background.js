@@ -22,33 +22,61 @@ async function geminiTtsSpeak(text, apiKeys, activeKeyIndex, voiceName, tabId) {
       phase: 'fetching'
     }).catch(() => {});
 
-    // Try current key, auto-rotate on quota/server errors
+    // Try current key with retry logic for 500 errors
     let audioBase64 = null;
     let lastError = null;
     const totalKeys = apiKeys.length;
+    const MAX_RETRIES_PER_KEY = 2; // Retry same key on transient 500 errors
 
-    for (let attempt = 0; attempt < totalKeys; attempt++) {
-      const key = apiKeys[currentKeyIdx];
-      try {
-        audioBase64 = await callGeminiTts(chunks[i], key, voiceName);
-        lastError = null;
-        break; // success
-      } catch (err) {
-        lastError = err;
-        const isQuotaOrServer = err.status === 429 || err.status === 500 || err.status === 503;
-        if (isQuotaOrServer && totalKeys > 1) {
-          // Rotate to next key
-          currentKeyIdx = (currentKeyIdx + 1) % totalKeys;
-          await chrome.tabs.sendMessage(tabId, {
-            action: 'gemini-key-switch',
-            newKeyIndex: currentKeyIdx,
-            reason: err.status === 429 ? 'Hết quota' : 'Lỗi server',
-            keyLabel: `Key ${currentKeyIdx + 1}`
-          }).catch(() => {});
-        } else {
-          throw err; // non-recoverable or single key
+    let keysAttempted = 0;
+    while (keysAttempted < totalKeys) {
+      let retryCount = 0;
+      let keySuccess = false;
+
+      while (retryCount <= MAX_RETRIES_PER_KEY) {
+        const key = apiKeys[currentKeyIdx];
+        try {
+          audioBase64 = await callGeminiTts(chunks[i], key, voiceName);
+          lastError = null;
+          keySuccess = true;
+          break; // success on this key
+        } catch (err) {
+          lastError = err;
+
+          // Transient 500: retry same key with short delay
+          if (err.status === 500 && retryCount < MAX_RETRIES_PER_KEY) {
+            retryCount++;
+            const delay = retryCount * 1500; // 1.5s, then 3s
+            await chrome.tabs.sendMessage(tabId, {
+              action: 'gemini-progress',
+              chunkIndex: i,
+              totalChunks: chunks.length,
+              phase: `retry_${retryCount}`
+            }).catch(() => {});
+            await new Promise(r => setTimeout(r, delay));
+            continue; // retry same key
+          }
+
+          // Quota (429) or persistent 500/503 — rotate to next key if available
+          const isRotatable = err.status === 429 || err.status === 500 || err.status === 503;
+          if (isRotatable && totalKeys > 1) {
+            currentKeyIdx = (currentKeyIdx + 1) % totalKeys;
+            await chrome.tabs.sendMessage(tabId, {
+              action: 'gemini-key-switch',
+              newKeyIndex: currentKeyIdx,
+              reason: err.status === 429 ? 'Hết quota' : 'Lỗi server',
+              keyLabel: `Key ${currentKeyIdx + 1}`
+            }).catch(() => {});
+            break; // break inner loop to try next key
+          } else {
+            // Non-recoverable or only 1 key: throw immediately
+            throw err;
+          }
         }
       }
+
+      if (keySuccess) break; // done with this chunk
+      keysAttempted++;
     }
 
     if (!audioBase64) {
