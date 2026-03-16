@@ -191,7 +191,10 @@
 
   // ---- Visualizer Logic ----
   function startVisualizer() {
-    if (!els || !els.visualizerCanvas || !analyser) return;
+    if (!els || !els.visualizerCanvas) return;
+    // Ensure the AudioContext and analyser are initialized before drawing
+    getAudioContext();
+    if (!analyser) return;
     els.visualizerCanvas.style.display = 'block';
 
     const canvas = els.visualizerCanvas;
