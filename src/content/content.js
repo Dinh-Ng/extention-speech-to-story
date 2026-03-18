@@ -24,6 +24,11 @@
   let geminiPlayedChunks = 0;
   let animationFrameId = null;
 
+  // Sleep Timer state
+  let sleepTimerId = null;
+  let sleepCountdownId = null;
+  let sleepTimerEndTime = null;
+
   // Default settings
   let ttsSettings = {
     rate: 1.0,
@@ -359,6 +364,56 @@
     }
   }
 
+  // ---- Sleep Timer Logic ----
+  function setSleepTimer(minutes) {
+    cancelSleepTimer();
+    const ms = minutes * 60 * 1000;
+    sleepTimerEndTime = Date.now() + ms;
+    sleepTimerId = setTimeout(() => {
+      // Auto-stop when timer fires
+      if (isSpeaking) {
+        if (ttsSettings.engine === 'gemini') stopGeminiPlayback();
+        chrome.runtime.sendMessage({ action: 'tts-stop' });
+        isSpeaking = false;
+        isPaused = false;
+        updateButtons();
+      }
+      cancelSleepTimer();
+      if (els) els.status.textContent = '⏱ Đã tự động tắt.';
+    }, ms);
+    startSleepCountdown();
+    updateSleepTimerUI();
+  }
+
+  function cancelSleepTimer() {
+    if (sleepTimerId) { clearTimeout(sleepTimerId); sleepTimerId = null; }
+    if (sleepCountdownId) { clearInterval(sleepCountdownId); sleepCountdownId = null; }
+    sleepTimerEndTime = null;
+    updateSleepTimerUI();
+  }
+
+  function startSleepCountdown() {
+    sleepCountdownId = setInterval(() => {
+      if (!sleepTimerEndTime) { clearInterval(sleepCountdownId); return; }
+      const remaining = sleepTimerEndTime - Date.now();
+      if (remaining <= 0) { clearInterval(sleepCountdownId); return; }
+      const mins = Math.floor(remaining / 60000);
+      const secs = Math.floor((remaining % 60000) / 1000);
+      const label = `${mins}:${String(secs).padStart(2, '0')}`;
+      const statusEl = document.getElementById('sts-sleep-status');
+      if (statusEl) statusEl.textContent = `⏱ Tắt sau ${label}`;
+    }, 1000);
+  }
+
+  function updateSleepTimerUI() {
+    const statusEl = document.getElementById('sts-sleep-status');
+    const btns = document.querySelectorAll('.sts-sleep-btn');
+    if (!sleepTimerEndTime) {
+      if (statusEl) statusEl.textContent = '';
+      btns.forEach(b => b.classList.remove('sts-active'));
+    }
+  }
+
   // ---- Theme Logic ----
   function applyTheme() {
     if (!els || !els.card) return;
@@ -690,6 +745,45 @@
     geminiSection.append(keyManagerRow, gVoiceRow);
     body.append(chromeSection, geminiSection);
 
+    // Sleep Timer Section
+    const sleepRow = document.createElement('div');
+    sleepRow.className = 'sts-setting-row';
+    sleepRow.innerHTML = `<div class="sts-setting-label">Hẹn giờ tắt</div>`;
+
+    const sleepBtnWrap = document.createElement('div');
+    sleepBtnWrap.className = 'sts-sleep-wrap';
+
+    const sleepPresets = [
+      { label: '15 phút', minutes: 15 },
+      { label: '30 phút', minutes: 30 },
+      { label: '60 phút', minutes: 60 },
+    ];
+    sleepPresets.forEach(({ label, minutes }) => {
+      const btn = document.createElement('button');
+      btn.className = 'sts-sleep-btn';
+      btn.dataset.minutes = minutes;
+      btn.textContent = label;
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.sts-sleep-btn').forEach(b => b.classList.remove('sts-active'));
+        btn.classList.add('sts-active');
+        setSleepTimer(minutes);
+      });
+      sleepBtnWrap.appendChild(btn);
+    });
+
+    const cancelSleepBtn = document.createElement('button');
+    cancelSleepBtn.className = 'sts-sleep-btn sts-sleep-cancel';
+    cancelSleepBtn.textContent = 'Huỷ';
+    cancelSleepBtn.addEventListener('click', () => cancelSleepTimer());
+    sleepBtnWrap.appendChild(cancelSleepBtn);
+
+    const sleepStatus = document.createElement('div');
+    sleepStatus.id = 'sts-sleep-status';
+    sleepStatus.className = 'sts-sleep-status';
+
+    sleepRow.append(sleepBtnWrap, sleepStatus);
+    body.appendChild(sleepRow);
+
     // Load chrome voices async
     chrome.runtime.sendMessage({ action: 'tts-getVoices' }, (response) => {
       if (!response || !response.voices) return;
@@ -858,6 +952,7 @@
         els.status.textContent = 'Đã dừng.';
         updateButtons();
       }
+      cancelSleepTimer(); // Cancel timer when user manually stops
     });
 
     els.reloadBtn.addEventListener('click', () => {

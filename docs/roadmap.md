@@ -12,7 +12,7 @@ Dưới đây là kế hoạch phát triển và những mục tiêu mở rộng
 | 🚀 In Progress | **Mở rộng hỗ trợ trên các nền tảng khác**: Tái cấu trúc parser để thêm TruyenQQ, TangThuVien... |
 | ⏳ Planned | **Tự động chuyển chương (Auto-Next Chapter)**: Tự nhận diện và chuyển trang khi đọc xong. |
 | ⏳ Planned | **Phím tắt điều khiển (Keyboard Shortcuts)**: Alt + P, Alt + N để điều khiển nhanh. |
-| ⏳ Planned | **Hẹn giờ tắt (Sleep Timer)**: Tự động dừng đọc sau 15, 30, 60 phút. |
+| ✅ Complete | **Hẹn giờ tắt (Sleep Timer)**: Tự động dừng đọc sau 15, 30, 60 phút. |
 | ⏳ Planned | **Highlight văn bản Karaoke**: Vừa đọc vừa highlight câu tương ứng trên trang. |
 | ⏳ Planned | **Đồng bộ tiến trình đọc (Sync Progress)**: Đồng bộ giữa nhiều thiết bị qua Chrome Sync. |
 | ⏳ Planned | **Tối ưu khả năng đọc Offline**: Lưu bộ đệm âm thanh tải trước (preload buffer). |

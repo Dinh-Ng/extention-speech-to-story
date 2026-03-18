@@ -538,6 +538,44 @@ select option {
   font-weight: 600;
 }
 
+/* --- Sleep Timer --- */
+.sts-sleep-wrap {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.sts-sleep-btn {
+  background: var(--sts-bg-input);
+  border: 1px solid var(--sts-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: var(--sts-text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.sts-sleep-btn:hover {
+  background: var(--sts-bg-hover);
+  color: var(--sts-text-main);
+}
+.sts-sleep-btn.sts-active {
+  background: #ea4335; /* highlight active timer red/orange */
+  color: #fff;
+  border-color: #ea4335;
+  font-weight: 600;
+}
+.sts-sleep-cancel {
+  border-style: dashed;
+}
+.sts-sleep-status {
+  font-size: 11px;
+  color: #ea4335;
+  margin-top: 6px;
+  font-weight: 500;
+  text-align: right;
+  flex: 1 1 100%; /* force to newline if space tight */
+}
+
 /* ===== Multi API Key List ===== */
 .sts-key-list {
   display: flex;
