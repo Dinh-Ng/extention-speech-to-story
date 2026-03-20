@@ -558,7 +558,25 @@
 
     const settingsBody = createSettingsBody();
 
-    card.append(header, controlsSection, settingsToggle, settingsBody);
+    // Error Popup Overlay
+    const errorPopup = document.createElement('div');
+    errorPopup.id = 'sts-error-popup';
+    errorPopup.className = 'sts-error-popup';
+    errorPopup.style.display = 'none';
+
+    const errorMsg = document.createElement('div');
+    errorMsg.className = 'sts-error-msg';
+
+    const errorCloseBtn = document.createElement('button');
+    errorCloseBtn.className = 'sts-error-close';
+    errorCloseBtn.textContent = 'Đóng';
+    errorCloseBtn.addEventListener('click', () => {
+      hideErrorPopup();
+    });
+
+    errorPopup.append(errorMsg, errorCloseBtn);
+
+    card.append(header, controlsSection, settingsToggle, settingsBody, errorPopup);
     container.appendChild(card);
     document.body.appendChild(container);
 
@@ -571,12 +589,12 @@
       playBtn,
       stopBtn,
       reloadBtn,
-      status: statusText,
-      progressWrap,
       progressBar,
       visualizerCanvas,
       settingsToggle,
-      settingsBody
+      settingsBody,
+      errorPopup,
+      errorMsg
     };
   }
 
@@ -907,7 +925,7 @@
           isPaused = false;
           updateButtons();
           hideProgressBar();
-          els.status.textContent = 'Lỗi: ' + resp.error;
+          showErrorPopup('Lỗi: ' + resp.error);
         }
       });
     } else {
@@ -1067,7 +1085,7 @@
         isSpeaking = false;
         isPaused = false;
         updateButtons();
-        if (msg.type === 'error') els.status.textContent = 'Lỗi: ' + (msg.error || 'Lỗi đọc.');
+        if (msg.type === 'error') showErrorPopup('Lỗi: ' + (msg.error || 'Lỗi đọc.'));
         break;
     }
   }
