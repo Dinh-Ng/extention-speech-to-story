@@ -142,6 +142,23 @@
     });
   }
 
+  // ---- Error Popup Logic ----
+  function showErrorPopup(message) {
+    // IMPORTANT: Stop any ongoing Gemini playback to prevent dual-audio on error
+    stopGeminiPlayback();
+    isSpeaking = false;
+    isPaused = false;
+    updateButtons();
+    if (!els || !els.errorPopup || !els.errorMsg) return;
+    els.errorMsg.textContent = message;
+    els.errorPopup.style.display = 'flex';
+  }
+
+  function hideErrorPopup() {
+    if (!els || !els.errorPopup) return;
+    els.errorPopup.style.display = 'none';
+  }
+
   // ---- Gemini Audio Playback ----
   function getAudioContext() {
     if (!audioContext) {
@@ -898,6 +915,10 @@
         els.status.textContent = 'Vui lòng thêm API Key trong cài đặt.';
         return;
       }
+
+      // Always stop previous Gemini session before starting a new one.
+      // This prevents dual-audio when restarting after an error mid-fetch.
+      stopGeminiPlayback();
 
       geminiStopped = false;
       audioQueue = [];
