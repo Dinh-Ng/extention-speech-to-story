@@ -40,8 +40,12 @@
     geminiApiKey: '',        // Legacy (migration support)
     geminiVoice: 'Kore',
     theme: 'system',
-    isMiniMode: false
+    isMiniMode: false,
+    autoNextChapter: false
   };
+
+  // Auto-next chapter state
+  let autoNextTimerId = null;
 
   const GEMINI_VOICES = [
     'Zephyr', 'Puck', 'Charon', 'Kore', 'Fenrir',
@@ -59,13 +63,20 @@
   // Helper to extract story slug from URL 
   // e.g. "https://truyenfull.vision/pham-nhan-tu-tien/chuong-1/" -> "pham-nhan-tu-tien"
   function getStoryIdFromUrl() {
-    try {
-      const pathSegments = window.location.pathname.split('/').filter(p => p);
-      if (pathSegments.length > 0) {
-        return pathSegments[0]; // first segment is usually the story slug
-      }
-    } catch (e) {}
-    return 'default_story';
+    const parts = window.location.pathname.split('/').filter(p => p.trim() !== '');
+    if (parts.length > 0) {
+      return parts[0]; 
+    }
+    return '';
+  }
+
+  // Helper to find the next chapter URL
+  function findNextChapterUrl() {
+    const nextBtn = document.querySelector('#next_chap') || document.querySelector('a[title*="Chương tiếp"]');
+    if (nextBtn && nextBtn.href && !nextBtn.classList.contains('disabled')) {
+      return nextBtn.href;
+    }
+    return null;
   }
 
   // ---- Load/Save settings ----
@@ -131,6 +142,7 @@
         geminiActiveKeyIndex: ttsSettings.geminiActiveKeyIndex,
         theme: ttsSettings.theme,
         isMiniMode: ttsSettings.isMiniMode,
+        autoNextChapter: ttsSettings.autoNextChapter,
         // Legacy fallbacks
         rate: ttsSettings.rate,
         pitch: ttsSettings.pitch,
@@ -345,7 +357,29 @@
         setTimeout(() => hideProgressBar(), 1500);
         els.status.textContent = 'Đã đọc xong.';
       }
+      checkAutoNextChapter();
     }
+  }
+
+  function checkAutoNextChapter() {
+    if (!ttsSettings.autoNextChapter) return;
+    const nextUrl = findNextChapterUrl();
+    if (!nextUrl) return;
+
+    let countdown = 5;
+    if (els) els.status.textContent = `Chuyển chương sau ${countdown}s...`;
+
+    autoNextTimerId = setInterval(() => {
+      countdown--;
+      if (countdown <= 0) {
+        clearInterval(autoNextTimerId);
+        autoNextTimerId = null;
+        if (els) els.status.textContent = 'Đang chuyển trang...';
+        window.location.href = nextUrl;
+      } else {
+        if (els) els.status.textContent = `Chuyển chương sau ${countdown}s...`;
+      }
+    }, 1000);
   }
 
   function stopGeminiPlayback() {
@@ -360,6 +394,10 @@
     isPaused = false;
     hideProgressBar();
     stopVisualizer();
+    if (autoNextTimerId) {
+      clearInterval(autoNextTimerId);
+      autoNextTimerId = null;
+    }
   }
 
   function pauseGeminiPlayback() {
@@ -819,6 +857,31 @@
     sleepRow.append(sleepBtnWrap, sleepStatus);
     body.appendChild(sleepRow);
 
+    // Auto Next Chapter Section
+    const nextChapRow = document.createElement('div');
+    nextChapRow.className = 'sts-setting-row sts-row-inline';
+    
+    const nextChapLabel = document.createElement('div');
+    nextChapLabel.className = 'sts-setting-label';
+    nextChapLabel.textContent = 'Tự động chuyển chương';
+
+    const nextChapLabelWrap = document.createElement('label');
+    nextChapLabelWrap.className = 'sts-toggle-wrap';
+    const nextChapInput = document.createElement('input');
+    nextChapInput.type = 'checkbox';
+    nextChapInput.checked = !!ttsSettings.autoNextChapter;
+    const nextChapSlider = document.createElement('span');
+    nextChapSlider.className = 'sts-toggle-slider';
+
+    nextChapInput.addEventListener('change', () => {
+      ttsSettings.autoNextChapter = nextChapInput.checked;
+      saveSettings();
+    });
+
+    nextChapLabelWrap.append(nextChapInput, nextChapSlider);
+    nextChapRow.append(nextChapLabel, nextChapLabelWrap);
+    body.appendChild(nextChapRow);
+
     // Load chrome voices async
     chrome.runtime.sendMessage({ action: 'tts-getVoices' }, (response) => {
       if (!response || !response.voices) return;
@@ -992,6 +1055,10 @@
         updateButtons();
       }
       cancelSleepTimer(); // Cancel timer when user manually stops
+      if (autoNextTimerId) {
+        clearInterval(autoNextTimerId);
+        autoNextTimerId = null;
+      }
     });
 
     els.reloadBtn.addEventListener('click', () => {
@@ -1090,6 +1157,9 @@
         isPaused = false;
         updateButtons();
         els.status.textContent = 'Đã đọc xong.';
+        if (ttsSettings.engine === 'chrome') {
+          checkAutoNextChapter();
+        }
         break;
       case 'pause':
         isPaused = true;
