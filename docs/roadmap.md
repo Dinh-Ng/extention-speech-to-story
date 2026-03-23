@@ -11,6 +11,7 @@ Dưới đây là kế hoạch phát triển và những mục tiêu mở rộng
 | ✅ Complete | **Lưu cấu hình Custom Voice cho từng truyện**: Ghi nhớ Voice/Rate riêng biệt cho mỗi bộ truyện. |
 | 🚀 In Progress | **Mở rộng hỗ trợ trên các nền tảng khác**: Tái cấu trúc parser để thêm TruyenQQ, TangThuVien... |
 | ✅ Complete | **Tự động chuyển chương (Auto-Next Chapter)**: Tự nhận diện và chuyển trang khi đọc xong. |
+| ✅ Complete | **Popup báo lỗi độc lập (Error Popup)**: Hiển thị lỗi rõ ràng và bắt buộc đóng thủ công. |
 | ⏳ Planned | **Phím tắt điều khiển (Keyboard Shortcuts)**: Alt + P, Alt + N để điều khiển nhanh. |
 | ✅ Complete | **Hẹn giờ tắt (Sleep Timer)**: Tự động dừng đọc sau 15, 30, 60 phút. |
 | ⏳ Planned | **Highlight văn bản Karaoke**: Vừa đọc vừa highlight câu tương ứng trên trang. |

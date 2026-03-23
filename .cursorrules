@@ -24,3 +24,9 @@ feat: ✨ Add audio wave visualizer
 
 Implemented a real-time audio wave visualizer for Gemini TTS using the Web Audio API. This provides visual feedback to the user while the AI is speaking, making the interface feel more alive and responsive.
 ```
+
+# Version Bump Rule (manifest.json)
+When updating the extension version in `manifest.json`, follow strict rules:
+- **Major Feature (Tính năng lớn):** Bump MAJOR version (e.g., `1.0` -> `2.0`).
+- **Minor Feature (Tính năng nhỏ):** Bump MINOR version (e.g., `2.0` -> `2.1`).
+- **Bug Fix (Sửa lỗi):** Bump PATCH version (e.g., `2.1.0` -> `2.1.1` or `2.1` -> `2.1.1`).

@@ -2,22 +2,28 @@
 
 Tất cả các thay đổi quan trọng đối với dự án "Đọc truyện Speech" sẽ được ghi lại trong file này. Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2.9.1] - 2026-03-24
+### Fixed
+- **Lỗi UI Reference**: Sửa lỗi `Uncaught TypeError` khi truy cập `els.status` giúp trình phát hoạt động ổn định trở lại.
+- **Lỗi Dual Audio**: Khắc phục tình trạng phát song song 2 luồng âm thanh khi gặp lỗi Gemini và bắt đầu session mới.
+- **Dọn dẹp State**: Đảm bảo `stopGeminiPlayback()` được gọi triệt để khi có lỗi hoặc khi người dùng thao tác nhanh.
+
+## [2.9.0] - 2026-03-21
+### Added
+- **Tự động chuyển chương (Auto-Next Chapter)**: Tự động nhảy sang chương tiếp theo sau 5 giây đếm ngược khi đọc xong.
+- **Popup Báo Lỗi (Error Popup)**: Hiển thị lỗi trong popup độc lập, yêu cầu đóng thủ công để hỗ trợ debug.
+- **Quy tắc Versioning**: Thiết lập quy tắc tự động tăng phiên bản trong `.cursorrules`.
+
+## [2.8.0] - 2026-03-17
+### Added
+- **Hẹn giờ tắt (Sleep Timer)**: Tự động dừng phát sau 15, 30, 60 phút với bộ đếm ngược thời gian thực.
+
 ## [2.7.0] - 2026-03-14
 ### Added
-- **Hiệu ứng sóng âm sống động (Wave Visualizer)**: Thêm hiệu ứng sóng âm chạy động (rendering via Canvas & AnalyserNode) khi phát audio với Gemini TTS.
-- **Chế độ trình phát thu nhỏ (Mini Player Mode)**: Cho phép thu gọn Card điều khiển về dạng tối giản để tiết kiệm diện tích.
-- **Lưu cấu hình Custom Voice cho từng truyện**: Tự động ghi nhớ Tốc độ,- **Giao diện hiện đại**:
-  - Giao diện dạng Floating Card (thẻ nổi) đẹp mắt ở góc màn hình.
-  - **Mini Player Mode**: Thu nhỏ giao diện về dạng "viên nang" cực gọn chỉ hiển thị nút điều khiển thiết yếu.
-  - Hỗ trợ đổi giao diện **Sáng/Tối** (hoặc tự động theo hệ thống).
-  - **Wave Visualizer**: Hiệu ứng sóng âm động tương ứng với giọng đọc (chỉ dành cho Gemini).
-  - Thanh tiến trình trực quan hiển thị phần trăm khi tạo audio từ AI.
-- **Tính năng điều khiển đầy đủ**: Phát (Play), Tạm dừng (Pause), Tiếp tục (Resume), Dừng (Stop) và Tải lại chương (Reload).
-- **Lưu cấu hình theo truyện**: Tự động nhớ giọng đọc và tốc độ riêng cho từng bộ truyện khác nhau. Khách hàng không cần chỉnh lại giọng khi đổi từ truyện tiên hiệp sang ngôn tình.
-- **Hỗ trợ truyện siêu dài**: Đối với engine Gemini, hệ thống tự động nhận diện và chia nhỏ văn bản vượt giới hạn giúp đảm bảo đọc trọn vẹn cả những chương truyện.
-- **Quản lý đa dạng Gemini API Key**: Hỗ trợ lưu nhiều API key cùng lúc. Tự động chuyển đổi sang key dự phòng khi gặp lỗi Quota (429) hoặc lỗi server (500/503).
-- **Voice Consistency**: Tự động áp dụng lệnh "System Instruction" cho Gemini AI, đảm bảo mô hình giữ một giọng đọc ổn định xuyên suốt.(Add), Xoá (Remove) và Chọn key chính (Manual Selection).
-- **Quy tắc AI Commit**: Thêm file `.cursorrules` để chuẩn hoá thông điệp commit khi làm việc với AI.
+- **Hiệu ứng sóng âm sống động (Wave Visualizer)**: Thêm hiệu ứng sóng âm động khi phát audio với Gemini TTS.
+- **Chế độ trình phát thu nhỏ (Mini Player Mode)**: Cho phép thu gọn Card điều khiển về dạng tối giản.
+- **Lưu cấu hình Custom Voice cho từng truyện**: Tự động ghi nhớ Tốc độ và Giọng đọc riêng biệt cho mỗi bộ truyện.
+- **Quy tắc AI Commit**: Thêm file `.cursorrules` để chuẩn hoá thông điệp commit.
 
 ### Changed
 - Cập nhật `.gitignore` để loại bỏ các file rác như `.DS_Store`.
