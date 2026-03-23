@@ -644,6 +644,8 @@
       playBtn,
       stopBtn,
       reloadBtn,
+      status: statusText,
+      progressWrap,
       progressBar,
       visualizerCanvas,
       settingsToggle,
