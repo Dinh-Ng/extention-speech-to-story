@@ -60,21 +60,55 @@
   let storySettingsMap = {};
   let currentStoryId = '';
 
-  // Helper to extract story slug from URL 
+  // ---- Site Parser Registry ----
+  // Each entry supports:
+  //   contentSelectors: list of CSS selectors tried in order for chapter text
+  //   nextChapSelectors: list of CSS selectors tried in order for next chapter link
+  // To add a new site, just add a new hostname key below.
+  const SITE_PARSERS = {
+    'truyenfull.vision': {
+      contentSelectors: ['#chapter-c'],
+      nextChapSelectors: ['#next_chap', 'a[title*="Ch\u01b0\u01a1ng ti\u1ebfp"]'],
+    },
+    'truyenfull.vip': {
+      contentSelectors: ['#chapter-c'],
+      nextChapSelectors: ['#next_chap', 'a[title*="Ch\u01b0\u01a1ng ti\u1ebfp"]'],
+    },
+    'truyen.tangthuvien.vn': {
+      contentSelectors: ['div.chapter', '#bookContentBody', '.content-chapter'],
+      nextChapSelectors: ['a.btn-chapter-next', 'a[title*="Ch\u01b0\u01a1ng ti\u1ebfp"]', '.next-chap'],
+    },
+    'medoctruyen.com': {
+      contentSelectors: ['div#vung_doc', '#bookContentBody', '.reading-content'],
+      nextChapSelectors: ['a.chapter-next', '#next_chap'],
+    },
+  };
+
+  // Returns the parser config for the current hostname, or null if unsupported
+  function detectParser() {
+    const hostname = window.location.hostname.replace(/^www\./, '');
+    return SITE_PARSERS[hostname] || null;
+  }
+
+  // Helper to extract story slug from URL
   // e.g. "https://truyenfull.vision/pham-nhan-tu-tien/chuong-1/" -> "pham-nhan-tu-tien"
   function getStoryIdFromUrl() {
     const parts = window.location.pathname.split('/').filter(p => p.trim() !== '');
     if (parts.length > 0) {
-      return parts[0]; 
+      return parts[0];
     }
     return '';
   }
 
-  // Helper to find the next chapter URL
+  // Helper to find the next chapter URL using site-specific selectors
   function findNextChapterUrl() {
-    const nextBtn = document.querySelector('#next_chap') || document.querySelector('a[title*="Chương tiếp"]');
-    if (nextBtn && nextBtn.href && !nextBtn.classList.contains('disabled')) {
-      return nextBtn.href;
+    const parser = detectParser();
+    const selectors = parser ? parser.nextChapSelectors : ['#next_chap', 'a[title*="Ch\u01b0\u01a1ng ti\u1ebfp"]'];
+    for (const sel of selectors) {
+      const el = document.querySelector(sel);
+      if (el && el.href && !el.classList.contains('disabled')) {
+        return el.href;
+      }
     }
     return null;
   }
@@ -923,13 +957,21 @@
 
   // ---- Fetch Content ----
   function fetchContent() {
-    const chapterDiv = document.getElementById('chapter-c');
-    if (!chapterDiv) {
+    const parser = detectParser();
+    const selectors = parser ? parser.contentSelectors : ['#chapter-c'];
+
+    let chapterEl = null;
+    for (const sel of selectors) {
+      chapterEl = document.querySelector(sel);
+      if (chapterEl) break;
+    }
+
+    if (!chapterEl) {
       els.status.textContent = 'Không tìm thấy nội dung chương.';
       els.playBtn.disabled = true;
       return;
     }
-    currentText = chapterDiv.innerText.trim();
+    currentText = chapterEl.innerText.trim();
     if (currentText) {
       const charCount = currentText.length;
       els.status.textContent = `Đã tải: ${charCount.toLocaleString()} ký tự.`;
