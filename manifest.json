@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Đọc truyện Speech",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Trích xuất và đọc nội dung truyện từ truyenfull.vision",
   "permissions": [
     "activeTab",
@@ -11,9 +11,7 @@
   ],
   "host_permissions": [
     "https://truyenfull.vision/*",
-    "https://truyenfull.vip/*",
-    "https://truyen.tangthuvien.vn/*",
-    "https://medoctruyen.com/*",
+    "https://tangthuvien.net/*",
     "https://generativelanguage.googleapis.com/*"
   ],
   "background": {
@@ -31,9 +29,7 @@
     {
       "matches": [
         "https://truyenfull.vision/*",
-        "https://truyenfull.vip/*",
-        "https://truyen.tangthuvien.vn/*",
-        "https://medoctruyen.com/*"
+        "https://tangthuvien.net/*"
       ],
       "js": ["src/content/content.js"],
       "css": ["assets/styles/content.css"]

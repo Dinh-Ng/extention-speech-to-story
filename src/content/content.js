@@ -68,19 +68,11 @@
   const SITE_PARSERS = {
     'truyenfull.vision': {
       contentSelectors: ['#chapter-c'],
-      nextChapSelectors: ['#next_chap', 'a[title*="Ch\u01b0\u01a1ng ti\u1ebfp"]'],
+      nextChapSelectors: ['#next_chap', 'a[title*="Chương tiếp"]'],
     },
-    'truyenfull.vip': {
-      contentSelectors: ['#chapter-c'],
-      nextChapSelectors: ['#next_chap', 'a[title*="Ch\u01b0\u01a1ng ti\u1ebfp"]'],
-    },
-    'truyen.tangthuvien.vn': {
-      contentSelectors: ['div.chapter', '#bookContentBody', '.content-chapter'],
-      nextChapSelectors: ['a.btn-chapter-next', 'a[title*="Ch\u01b0\u01a1ng ti\u1ebfp"]', '.next-chap'],
-    },
-    'medoctruyen.com': {
-      contentSelectors: ['div#vung_doc', '#bookContentBody', '.reading-content'],
-      nextChapSelectors: ['a.chapter-next', '#next_chap'],
+    'tangthuvien.net': {
+      contentSelectors: ['div.chapter-c', '#bookContentBody', '.content-chapter'],
+      nextChapSelectors: ['a.btn-chapter-next', 'a[title*="Chương tiếp"]', '.next-chap'],
     },
   };
 

@@ -9,7 +9,7 @@ Dưới đây là kế hoạch phát triển và những mục tiêu mở rộng
 | ✅ Complete | **Chế độ trình phát thu nhỏ (Mini Player Mode)**: Giao diện tối giản tiết kiệm diện tích. |
 | ✅ Complete | **Hiệu ứng sóng âm sống động (Wave Visualizer)**: Hiệu ứng động khi phát audio với Gemini. |
 | ✅ Complete | **Lưu cấu hình Custom Voice cho từng truyện**: Ghi nhớ Voice/Rate riêng biệt cho mỗi bộ truyện. |
-| ✅ Complete | **Mở rộng hỗ trợ trên các nền tảng khác**: Hỗ trợ thêm TruyenFull.vip, TangThuVien, MeDocTruyen. |
+| ✅ Complete | **Mở rộng hỗ trợ trên các nền tảng khác**: Hỗ trợ thêm TangThuVien (tangthuvien.net). |
 | ✅ Complete | **Tự động chuyển chương (Auto-Next Chapter)**: Tự nhận diện và chuyển trang khi đọc xong. |
 | ✅ Complete | **Popup báo lỗi độc lập (Error Popup)**: Hiển thị lỗi rõ ràng và bắt buộc đóng thủ công. |
 | ⏳ Planned | **Phím tắt điều khiển (Keyboard Shortcuts)**: Alt + P, Alt + N để điều khiển nhanh. |
