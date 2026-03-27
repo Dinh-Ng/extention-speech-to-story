@@ -2,6 +2,16 @@
 
 Tất cả các thay đổi quan trọng đối với dự án "Đọc truyện Speech" sẽ được ghi lại trong file này. Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [3.1.0] - 2026-03-28
+### Added
+- **Lưu vị trí đọc (Save Reading Position)**: Ghi nhớ phần (chunk) đang phát dở của Gemini TTS và hiển thị banner "Đọc tiếp" khi quay lại trang.
+- **Auto-resume Logic**: Tự động xóa lịch sử đọc sau khi hoàn thành chương hoặc khi người dùng chọn "Bỏ qua".
+
+## [3.0.0] - 2026-03-25
+### Added
+- **Mở rộng hỗ trợ đa nền tảng**: Hỗ trợ thêm trang web `tangthuvien.net`.
+- **Hệ thống SITE_PARSERS**: Tái cấu trúc logic trích xuất nội dung thành dạng registry linh hoạt, dễ dàng thêm trang web mới chỉ bằng CSS selectors.
+
 ## [2.9.1] - 2026-03-24
 ### Fixed
 - **Lỗi UI Reference**: Sửa lỗi `Uncaught TypeError` khi truy cập `els.status` giúp trình phát hoạt động ổn định trở lại.

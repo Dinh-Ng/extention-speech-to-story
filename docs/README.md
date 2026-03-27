@@ -1,6 +1,6 @@
 # Đọc truyện Speech (Speech-to-Story)
 
-Đọc truyện Speech là một Chrome Extension được thiết kế để trích xuất và đọc nội dung truyện tự động từ trang web **truyenfull.vision**. Extension cung cấp một giao diện người dùng trực quan, gọn gàng, dạng Floating Card tích hợp ngay trên trang web, mang lại trải nghiệm tiện lợi nhất cho người nghe truyện.
+Đọc truyện Speech là một Chrome Extension được thiết kế để trích xuất và đọc nội dung truyện tự động từ các trang web như **truyenfull.vision** và **tangthuvien.net**. Extension cung cấp một giao diện người dùng trực quan, gọn gàng, dạng Floating Card tích hợp ngay trên trang web, mang lại trải nghiệm tiện lợi nhất cho người nghe truyện.
 
 ## Tính năng nổi bật
 
@@ -19,6 +19,8 @@
 - **Quản lý đa dạng Gemini API Key**: Hỗ trợ lưu nhiều API key cùng lúc. Tự động chuyển đổi sang key dự phòng khi gặp lỗi Quota (429) hoặc lỗi server (500/503).
 - **Hẹn giờ tắt (Sleep Timer)**: Tự động dừng phát sau 15, 30 hoặc 60 phút với bộ đếm ngược thời gian thực.
 - **Tự động chuyển chương (Auto-Next Chapter)**: Tự động chuyển sang chương tiếp theo sau 5 giây khi đọc xong chương hiện tại.
+- **Lưu vị trí đọc (Save Reading Position)**: Ghi nhớ phần (chunk) đang đọc dở của Gemini TTS. Khi quay lại trang, extension sẽ hỏi bạn có muốn đọc tiếp từ vị trí cũ hay không.
+- **Hỗ trợ đa nền tảng**: Kiến trúc parser linh hoạt cho phép hỗ trợ nhiều trang web truyện khác nhau (hiện đã hỗ trợ Truyenfull và TangThuVien).
 - **Voice Consistency**: Tự động áp dụng lệnh "System Instruction" cho Gemini AI, đảm bảo mô hình giữ một giọng đọc ổn định xuyên suốt.
 
 ## Tài liệu dự án
@@ -47,7 +49,7 @@ Extension này chưa được tải lên Chrome Web Store. Bạn có thể cài 
 
 ## Hướng dẫn sử dụng
 
-1. Truy cập vào bất kỳ chương truyện nào trên trang [truyenfull.vision](https://truyenfull.vision).
+1. Truy cập vào bất kỳ chương truyện nào trên các trang được hỗ trợ (ví dụ: [truyenfull.vision](https://truyenfull.vision) hoặc [tangthuvien.net](https://tangthuvien.net)).
 2. Khi trang được load xong, một thanh điều khiển **Đọc truyện Speech** sẽ xuất hiện ở góc dưới bên phải màn hình.
 3. **Nếu bạn muốn dùng chế độ cơ bản (Chrome)**:
    - Tab "Chrome" được chọn sẵn.
@@ -64,7 +66,7 @@ Extension này chưa được tải lên Chrome Web Store. Bạn có thể cài 
 ## Cài đặt riêng tư & API
 
 - **API Key được lưu trữ cục bộ**: API Key của Gemini chỉ được lưu trực tiếp trong bộ nhớ cục bộ (Local Storage) của trình duyệt bạn (`chrome.storage.local`). Hệ thống không gửi hay lưu trữ key này ở bất kì server bên thứ ba nào ngoại trừ server của Google Generative AI để tạo audio.
-- Extension chỉ được cấp quyền hoạt động và trích xuất nội dung giới hạn duy nhất đối với tên miền `truyenfull.vision`.
+- Extension chỉ được cấp quyền hoạt động và trích xuất nội dung giới hạn đối với các tên miền được hỗ trợ (hiện tại là `truyenfull.vision` và `tangthuvien.net`).
 
 ## Khắc phục sự cố (Troubleshooting)
 
