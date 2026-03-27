@@ -1,7 +1,7 @@
 // background.js — TTS service worker using chrome.tts API + Gemini TTS
 
 // ---- Gemini TTS Helper (Multi-Key Support) ----
-async function geminiTtsSpeak(text, apiKeys, activeKeyIndex, voiceName, tabId) {
+async function geminiTtsSpeak(text, apiKeys, activeKeyIndex, voiceName, tabId, startChunkIndex = 0) {
   const CHUNK_SIZE = 2500;
   const chunks = splitTextIntoChunks(text, CHUNK_SIZE);
   let currentKeyIdx = activeKeyIndex || 0;
@@ -13,7 +13,7 @@ async function geminiTtsSpeak(text, apiKeys, activeKeyIndex, voiceName, tabId) {
     totalChars: text.length
   }).catch(() => {});
 
-  for (let i = 0; i < chunks.length; i++) {
+  for (let i = startChunkIndex; i < chunks.length; i++) {
     // Notify progress before fetching
     await chrome.tabs.sendMessage(tabId, {
       action: 'gemini-progress',
@@ -230,7 +230,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         break;
       }
 
-      geminiTtsSpeak(request.text, apiKeys, request.activeKeyIndex || 0, request.geminiVoice, tabId)
+      geminiTtsSpeak(request.text, apiKeys, request.activeKeyIndex || 0, request.geminiVoice, tabId, request.startChunkIndex || 0)
         .then(() => {
           sendResponse({ success: true });
         })

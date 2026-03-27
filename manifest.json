@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Đọc truyện Speech",
-  "version": "3.0.1",
+  "version": "3.1.0",
   "description": "Trích xuất và đọc nội dung truyện từ truyenfull.vision",
   "permissions": [
     "activeTab",

@@ -60,6 +60,9 @@
   let storySettingsMap = {};
   let currentStoryId = '';
 
+  // Reading progress map (URL -> { chunkIndex, totalChunks, savedAt })
+  let readingProgressMap = {};
+
   // ---- Site Parser Registry ----
   // Each entry supports:
   //   contentSelectors: list of CSS selectors tried in order for chapter text
@@ -109,7 +112,11 @@
   function loadSettings(callback) {
     currentStoryId = getStoryIdFromUrl();
 
-    chrome.storage.local.get(['ttsSettings', 'storySettingsMap'], (result) => {
+    chrome.storage.local.get(['ttsSettings', 'storySettingsMap', 'readingProgressMap'], (result) => {
+      if (result.readingProgressMap) {
+        readingProgressMap = result.readingProgressMap;
+      }
+
       if (result.ttsSettings) {
         // Load global settings
         ttsSettings.geminiApiKeys = result.ttsSettings.geminiApiKeys || ttsSettings.geminiApiKeys;
@@ -178,6 +185,25 @@
       },
       storySettingsMap: storySettingsMap
     });
+  }
+
+  // ---- Reading Progress ----
+  function saveReadingProgress(chunkIndex, totalChunks) {
+    const url = window.location.href.split('#')[0]; // ignore hash
+    readingProgressMap[url] = {
+      chunkIndex,
+      totalChunks,
+      savedAt: Date.now()
+    };
+    chrome.storage.local.set({ readingProgressMap });
+  }
+
+  function clearReadingProgress() {
+    const url = window.location.href.split('#')[0];
+    if (readingProgressMap[url]) {
+      delete readingProgressMap[url];
+      chrome.storage.local.set({ readingProgressMap });
+    }
   }
 
   // ---- Error Popup Logic ----
@@ -364,6 +390,7 @@
         }
 
         await playBase64Pcm(chunk.audioData);
+        saveReadingProgress(geminiPlayedChunks, geminiTotalChunks);
       } else if (geminiAllChunksReceived) {
         break;
       } else {
@@ -377,6 +404,7 @@
     if (!geminiStopped && ttsSettings.engine === 'gemini') {
       isSpeaking = false;
       isPaused = false;
+      clearReadingProgress(); // Clear when finished naturally
       if (els) {
         updateButtons(els);
         updateProgressBar(100);
@@ -632,6 +660,27 @@
     statusWrap.append(statusText, visualizerCanvas, progressWrap);
     controlsSection.append(btnRow, statusWrap);
 
+    // Resume Banner
+    const resumeBanner = document.createElement('div');
+    resumeBanner.id = 'sts-resume-banner';
+    resumeBanner.className = 'sts-resume-banner';
+    resumeBanner.style.display = 'none';
+
+    const resumeText = document.createElement('div');
+    resumeText.className = 'sts-resume-text';
+    
+    const resumeBtnRow = document.createElement('div');
+    resumeBtnRow.className = 'sts-resume-btn-row';
+    const resumeYesBtn = document.createElement('button');
+    resumeYesBtn.className = 'sts-resume-btn sts-resume-yes';
+    resumeYesBtn.textContent = 'Đọc tiếp';
+    const resumeNoBtn = document.createElement('button');
+    resumeNoBtn.className = 'sts-resume-btn sts-resume-no';
+    resumeNoBtn.textContent = 'Bỏ qua';
+    resumeBtnRow.append(resumeYesBtn, resumeNoBtn);
+
+    resumeBanner.append(resumeText, resumeBtnRow);
+
     // 3. Expandable Settings
     const settingsToggle = document.createElement('button');
     settingsToggle.className = 'sts-settings-toggle';
@@ -674,6 +723,10 @@
       progressWrap,
       progressBar,
       visualizerCanvas,
+      resumeBanner,
+      resumeText,
+      resumeYesBtn,
+      resumeNoBtn,
       settingsToggle,
       settingsBody,
       errorPopup,
@@ -968,6 +1021,15 @@
       const charCount = currentText.length;
       els.status.textContent = `Đã tải: ${charCount.toLocaleString()} ký tự.`;
       els.playBtn.disabled = false;
+
+      // Check for reading progress
+      const url = window.location.href.split('#')[0];
+      const progress = readingProgressMap[url];
+      if (progress && progress.chunkIndex > 0 && progress.chunkIndex < progress.totalChunks && ttsSettings.engine === 'gemini') {
+        els.resumeText.textContent = `Tiếp tục từ phần ${progress.chunkIndex}/${progress.totalChunks}?`;
+        els.resumeBanner.style.display = 'flex';
+      }
+
     } else {
       els.status.textContent = 'Nội dung trống.';
       els.playBtn.disabled = true;
@@ -1006,7 +1068,7 @@
     }
   }
 
-  function startSpeech() {
+  function startSpeech(startChunkIndex = 0) {
     if (!currentText) return;
 
     if (ttsSettings.engine === 'gemini') {
@@ -1014,6 +1076,9 @@
         els.status.textContent = 'Vui lòng thêm API Key trong cài đặt.';
         return;
       }
+
+      // Hide resume banner if starting speech
+      els.resumeBanner.style.display = 'none';
 
       // Always stop previous Gemini session before starting a new one.
       // This prevents dual-audio when restarting after an error mid-fetch.
@@ -1025,7 +1090,7 @@
       geminiTotalChunks = 0;
       geminiReceivedChunks = 0;
       geminiAllChunksReceived = false;
-      geminiPlayedChunks = 0;
+      geminiPlayedChunks = startChunkIndex; // Initialize with offset
 
       isSpeaking = true;
       isPaused = false;
@@ -1038,7 +1103,8 @@
         text: currentText,
         apiKeys: ttsSettings.geminiApiKeys,
         activeKeyIndex: ttsSettings.geminiActiveKeyIndex || 0,
-        geminiVoice: ttsSettings.geminiVoice
+        geminiVoice: ttsSettings.geminiVoice,
+        startChunkIndex: startChunkIndex
       }, (resp) => {
         if (resp && !resp.success && resp.error) {
           isSpeaking = false;
@@ -1095,6 +1161,20 @@
         clearInterval(autoNextTimerId);
         autoNextTimerId = null;
       }
+    });
+
+    els.resumeYesBtn.addEventListener('click', () => {
+      const url = window.location.href.split('#')[0];
+      const progress = readingProgressMap[url];
+      if (progress && progress.chunkIndex > 0) {
+        startSpeech(progress.chunkIndex);
+      }
+    });
+
+    els.resumeNoBtn.addEventListener('click', () => {
+      els.resumeBanner.style.display = 'none';
+      clearReadingProgress();
+      startSpeech(0); // Optional: Auto-start from beginning, or just clear and wait for user to click play
     });
 
     els.reloadBtn.addEventListener('click', () => {

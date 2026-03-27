@@ -320,6 +320,74 @@
   100% { background-position: -200% 0; }
 }
 
+/* --- Resume Banner --- */
+.sts-resume-banner {
+  background: var(--sts-bg-hover);
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  animation: sts-fade-in 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.sts-resume-text {
+  font-size: 14px;
+  color: var(--sts-text-main);
+  font-weight: 500;
+  text-align: center;
+}
+
+.sts-resume-btn-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  justify-content: center;
+}
+
+.sts-resume-btn {
+  padding: 6px 16px;
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sts-resume-yes {
+  background: #4285f4;
+  color: #fff;
+}
+.sts-resume-yes:hover {
+  background: #3367d6;
+  transform: translateY(-1px);
+}
+
+.sts-resume-no {
+  background: transparent;
+  color: var(--sts-text-sec);
+  border: 1px solid var(--sts-border);
+}
+.sts-resume-no:hover {
+  background: rgba(0,0,0,0.05);
+  color: var(--sts-text-main);
+}
+.sts-light-theme .sts-resume-no:hover {
+  background: rgba(0,0,0,0.05);
+}
+.sts-dark-theme .sts-resume-no:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+@keyframes sts-fade-in {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* --- Expandable Settings Section --- */
 .sts-settings-toggle {
   width: 100%;

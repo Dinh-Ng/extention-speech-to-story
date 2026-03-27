@@ -15,6 +15,6 @@ Dưới đây là kế hoạch phát triển và những mục tiêu mở rộng
 | ⏳ Planned | **Phím tắt điều khiển (Keyboard Shortcuts)**: Alt + P, Alt + N để điều khiển nhanh. |
 | ✅ Complete | **Hẹn giờ tắt (Sleep Timer)**: Tự động dừng đọc sau 15, 30, 60 phút. |
 | ⏳ Planned | **Highlight văn bản Karaoke**: Vừa đọc vừa highlight câu tương ứng trên trang. |
-| ⏳ Planned | **Đồng bộ tiến trình đọc (Sync Progress)**: Đồng bộ giữa nhiều thiết bị qua Chrome Sync. |
+| ✅ Complete | **Lưu vị trí đọc (Save Reading Position)**: Nhớ chunk đang đọc để resume khi reload lại trang. |
 | ⏳ Planned | **Tối ưu khả năng đọc Offline**: Lưu bộ đệm âm thanh tải trước (preload buffer). |
 | ⏳ Planned | **Phát hành lên Chrome Web Store**: Xuất bản chính thức để cài đặt dễ dàng hơn. |
