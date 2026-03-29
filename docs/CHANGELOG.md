@@ -2,6 +2,12 @@
 
 Tất cả các thay đổi quan trọng đối với dự án "Đọc truyện Speech" sẽ được ghi lại trong file này. Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [3.2.0] - 2026-03-28
+### Changed
+- **Tái cấu trúc UI Settings**: Tách phần Cài đặt âm thanh từ dạng accordion trong Card thành một popup/modal riêng biệt.
+- **Nút Cài đặt mới**: Thay thế nút bấm văn bản bằng biểu tượng bánh răng (⚙) trong Header để tiết kiệm diện tích.
+- **Cải thiện trải nghiệm**: Thêm hiệu ứng overlay mờ và animation modal giúp giao diện chuyên nghiệp hơn.
+
 ## [3.1.0] - 2026-03-28
 ### Added
 - **Lưu vị trí đọc (Save Reading Position)**: Ghi nhớ phần (chunk) đang phát dở của Gemini TTS và hiển thị banner "Đọc tiếp" khi quay lại trang.

@@ -10,6 +10,7 @@
 - **Giao diện hiện đại**:
   - Giao diện dạng Floating Card (thẻ nổi) đẹp mắt ở góc màn hình.
   - **Mini Player Mode**: Thu nhỏ giao diện về dạng "viên nang" cực gọn chỉ hiển thị nút điều khiển thiết yếu.
+  - **Settings Popup**: Phần cài đặt được tách riêng thành popup với hiệu ứng modal chuyên nghiệp (mở bằng nút ⚙).
   - Hỗ trợ đổi giao diện **Sáng/Tối** (hoặc tự động theo hệ thống).
   - **Wave Visualizer**: Hiệu ứng sóng âm động tương ứng với giọng đọc (chỉ dành cho Gemini).
   - Thanh tiến trình trực quan hiển thị phần trăm khi tạo audio từ AI.
@@ -28,7 +29,6 @@
 - [CHANGELOG.md](./CHANGELOG.md): Theo dõi lịch sử thay đổi qua các phiên bản.
 - [roadmap.md](./roadmap.md): Kế hoạch phát triển các tính năng trong tương lai.
 
-## Hướng dẫn cài đặt
 
 Extension này chưa được tải lên Chrome Web Store. Bạn có thể cài đặt bằng một trong hai cách sau:
 

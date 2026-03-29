@@ -612,7 +612,12 @@
     miniBtn.innerHTML = ttsSettings.isMiniMode ? '⛶' : '—';
     miniBtn.title = 'Thu nhỏ / Phóng to';
 
-    header.append(title, engineToggle, miniBtn);
+    const settingsBtn = document.createElement('button');
+    settingsBtn.className = 'sts-settings-btn';
+    settingsBtn.innerHTML = '⚙';
+    settingsBtn.title = 'Cài đặt âm thanh';
+
+    header.append(title, engineToggle, settingsBtn, miniBtn);
 
     // 2. Main Playback Controls
     const controlsSection = document.createElement('div');
@@ -681,12 +686,29 @@
 
     resumeBanner.append(resumeText, resumeBtnRow);
 
-    // 3. Expandable Settings
-    const settingsToggle = document.createElement('button');
-    settingsToggle.className = 'sts-settings-toggle';
-    settingsToggle.innerHTML = `Cài đặt âm thanh <span class="sts-chevron">▼</span>`;
+    // 3. Settings Popup (detached from card)
+    const settingsOverlay = document.createElement('div');
+    settingsOverlay.id = 'sts-settings-overlay';
+    settingsOverlay.style.display = 'none';
+
+    const settingsModal = document.createElement('div');
+    settingsModal.className = 'sts-settings-modal';
+
+    const settingsModalHeader = document.createElement('div');
+    settingsModalHeader.className = 'sts-settings-modal-header';
+    const settingsModalTitle = document.createElement('span');
+    settingsModalTitle.textContent = 'Cài đặt âm thanh';
+    const settingsCloseBtn = document.createElement('button');
+    settingsCloseBtn.className = 'sts-settings-close-btn';
+    settingsCloseBtn.innerHTML = '✕';
+    settingsCloseBtn.title = 'Đóng';
+    settingsModalHeader.append(settingsModalTitle, settingsCloseBtn);
 
     const settingsBody = createSettingsBody();
+    settingsBody.className = 'sts-settings-body sts-open';
+
+    settingsModal.append(settingsModalHeader, settingsBody);
+    settingsOverlay.appendChild(settingsModal);
 
     // Error Popup Overlay
     const errorPopup = document.createElement('div');
@@ -706,14 +728,15 @@
 
     errorPopup.append(errorMsg, errorCloseBtn);
 
-    card.append(header, controlsSection, settingsToggle, settingsBody, errorPopup);
-    container.appendChild(card);
+    card.append(header, controlsSection, resumeBanner, errorPopup);
+    container.append(card, settingsOverlay);
     document.body.appendChild(container);
 
     // Return elements reference
     return {
       card,
       miniBtn,
+      settingsBtn,
       btnChrome,
       btnGemini,
       playBtn,
@@ -727,7 +750,8 @@
       resumeText,
       resumeYesBtn,
       resumeNoBtn,
-      settingsToggle,
+      settingsOverlay,
+      settingsCloseBtn,
       settingsBody,
       errorPopup,
       errorMsg
@@ -1186,10 +1210,19 @@
       fetchContent();
     });
 
-    els.settingsToggle.addEventListener('click', () => {
-      settingsOpen = !settingsOpen;
-      els.settingsToggle.classList.toggle('sts-open', settingsOpen);
-      els.settingsBody.classList.toggle('sts-open', settingsOpen);
+    // Settings Popup Logic
+    const openSettings = () => {
+      els.settingsOverlay.style.display = 'flex';
+      els.settingsBtn.classList.add('sts-active');
+    };
+    const closeSettings = () => {
+      els.settingsOverlay.style.display = 'none';
+      els.settingsBtn.classList.remove('sts-active');
+    };
+    els.settingsBtn.addEventListener('click', openSettings);
+    els.settingsCloseBtn.addEventListener('click', closeSettings);
+    els.settingsOverlay.addEventListener('click', (e) => {
+      if (e.target === els.settingsOverlay) closeSettings();
     });
 
     // Engine Toggle Logic

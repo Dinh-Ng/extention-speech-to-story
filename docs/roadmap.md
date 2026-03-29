@@ -17,4 +17,5 @@ Dưới đây là kế hoạch phát triển và những mục tiêu mở rộng
 | ⏳ Planned | **Highlight văn bản Karaoke**: Vừa đọc vừa highlight câu tương ứng trên trang. |
 | ✅ Complete | **Lưu vị trí đọc (Save Reading Position)**: Nhớ chunk đang đọc để resume khi reload lại trang. |
 | ⏳ Planned | **Tối ưu khả năng đọc Offline**: Lưu bộ đệm âm thanh tải trước (preload buffer). |
+| ✅ Complete | **Tái cấu trúc UI Settings**: Tách cài đặt thành popup riêng biệt với hiệu ứng modal. |
 | ⏳ Planned | **Phát hành lên Chrome Web Store**: Xuất bản chính thức để cài đặt dễ dàng hơn. |
