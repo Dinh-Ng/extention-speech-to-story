@@ -29,6 +29,12 @@
   let sleepCountdownId = null;
   let sleepTimerEndTime = null;
 
+  // Background Music state
+  let bgMusicContext = null;
+  let bgMusicGainNode = null;
+  let bgMusicSource = null;
+  let bgMusicCustomAudio = null;
+
   // Default settings
   let ttsSettings = {
     rate: 1.0,
@@ -41,7 +47,13 @@
     geminiVoice: 'Kore',
     theme: 'system',
     isMiniMode: false,
-    autoNextChapter: false
+    autoNextChapter: false,
+    bgMusic: {
+      enabled: false,
+      track: 'rain',
+      volume: 0.3,
+      customUrl: ''
+    }
   };
 
   // Auto-next chapter state
@@ -138,6 +150,15 @@
         ttsSettings.voiceName = result.ttsSettings.voiceName || ttsSettings.voiceName;
         ttsSettings.engine = result.ttsSettings.engine || ttsSettings.engine;
         ttsSettings.geminiVoice = result.ttsSettings.geminiVoice || ttsSettings.geminiVoice;
+        ttsSettings.autoNextChapter = result.ttsSettings.autoNextChapter ?? ttsSettings.autoNextChapter;
+
+        // Load background music settings
+        if (result.ttsSettings.bgMusic) {
+          ttsSettings.bgMusic = {
+            ...ttsSettings.bgMusic,
+            ...result.ttsSettings.bgMusic
+          };
+        }
       }
 
       if (result.storySettingsMap) {
@@ -176,6 +197,7 @@
         theme: ttsSettings.theme,
         isMiniMode: ttsSettings.isMiniMode,
         autoNextChapter: ttsSettings.autoNextChapter,
+        bgMusic: ttsSettings.bgMusic,
         // Legacy fallbacks
         rate: ttsSettings.rate,
         pitch: ttsSettings.pitch,
@@ -402,6 +424,7 @@
     stopVisualizer();
 
     if (!geminiStopped && ttsSettings.engine === 'gemini') {
+      stopBgMusic();
       isSpeaking = false;
       isPaused = false;
       clearReadingProgress(); // Clear when finished naturally
@@ -481,6 +504,7 @@
     sleepTimerId = setTimeout(() => {
       // Auto-stop when timer fires
       if (isSpeaking) {
+        stopBgMusic();
         if (ttsSettings.engine === 'gemini') stopGeminiPlayback();
         chrome.runtime.sendMessage({ action: 'tts-stop' });
         isSpeaking = false;
@@ -520,6 +544,130 @@
     if (!sleepTimerEndTime) {
       if (statusEl) statusEl.textContent = '';
       btns.forEach(b => b.classList.remove('sts-active'));
+    }
+  }
+
+  // ---- Background Music Logic ----
+  function createWhiteNoiseBuffer(ctx, durationSec) {
+    const bufferSize = ctx.sampleRate * durationSec;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const output = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+    return buffer;
+  }
+
+  function createBrownNoiseBuffer(ctx, durationSec) {
+    const bufferSize = ctx.sampleRate * durationSec;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const output = buffer.getChannelData(0);
+    let lastOut = 0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      output[i] = (lastOut + (0.02 * white)) / 1.02;
+      lastOut = output[i];
+      output[i] *= 3.5; // compensate for gain drop
+    }
+    return buffer;
+  }
+
+  function startBgMusic() {
+    if (!ttsSettings.bgMusic.enabled) return;
+    
+    stopBgMusic(); // Clean up previous
+    
+    // For custom URL, use HTMLAudioElement
+    if (ttsSettings.bgMusic.track === 'custom') {
+      if (!ttsSettings.bgMusic.customUrl) return;
+      bgMusicCustomAudio = new Audio(ttsSettings.bgMusic.customUrl);
+      bgMusicCustomAudio.loop = true;
+      bgMusicCustomAudio.volume = ttsSettings.bgMusic.volume;
+      bgMusicCustomAudio.play().catch(e => console.log("Lỗi phát nhạc nền:", e));
+      return;
+    }
+    
+    // Web Audio API for synthetic ambient sounds
+    bgMusicContext = new (window.AudioContext || window.webkitAudioContext)();
+    bgMusicGainNode = bgMusicContext.createGain();
+    
+    // Prevent immediate pop by starting gain slightly lower or just assigning value
+    bgMusicGainNode.gain.setValueAtTime(ttsSettings.bgMusic.volume, bgMusicContext.currentTime);
+    bgMusicGainNode.connect(bgMusicContext.destination);
+
+    bgMusicSource = bgMusicContext.createBufferSource();
+    bgMusicSource.loop = true;
+    
+    if (ttsSettings.bgMusic.track === 'whitenoise') {
+      bgMusicSource.buffer = createWhiteNoiseBuffer(bgMusicContext, 5); 
+      bgMusicSource.connect(bgMusicGainNode);
+    } else if (ttsSettings.bgMusic.track === 'brownnoise') {
+      bgMusicSource.buffer = createBrownNoiseBuffer(bgMusicContext, 5);
+      bgMusicSource.connect(bgMusicGainNode);
+    } else if (ttsSettings.bgMusic.track === 'rain') {
+      bgMusicSource.buffer = createWhiteNoiseBuffer(bgMusicContext, 5);
+      
+      const lowpass = bgMusicContext.createBiquadFilter();
+      lowpass.type = 'lowpass';
+      lowpass.frequency.value = 800; // Muffled 
+
+      // LFO for rain intensity variation
+      const lfo = bgMusicContext.createOscillator();
+      lfo.type = 'sine';
+      lfo.frequency.value = 0.5; // Hz
+      
+      const lfoGain = bgMusicContext.createGain();
+      lfoGain.gain.value = 200; 
+      
+      lfo.connect(lfoGain);
+      lfoGain.connect(lowpass.frequency);
+      lfo.start();
+
+      bgMusicSource.connect(lowpass);
+      lowpass.connect(bgMusicGainNode);
+    }
+    
+    bgMusicSource.start();
+  }
+
+  function stopBgMusic() {
+    if (bgMusicSource) {
+      try { bgMusicSource.stop(); } catch(e) {}
+      bgMusicSource.disconnect();
+      bgMusicSource = null;
+    }
+    if (bgMusicContext) {
+      bgMusicContext.close();
+      bgMusicContext = null;
+    }
+    if (bgMusicCustomAudio) {
+      bgMusicCustomAudio.pause();
+      bgMusicCustomAudio.src = '';
+      bgMusicCustomAudio = null;
+    }
+    bgMusicGainNode = null;
+  }
+
+  function setBgMusicVolume(v) {
+    ttsSettings.bgMusic.volume = v;
+    if (bgMusicGainNode && bgMusicContext) {
+      bgMusicGainNode.gain.linearRampToValueAtTime(v, bgMusicContext.currentTime + 0.1);
+    }
+    if (bgMusicCustomAudio) {
+      bgMusicCustomAudio.volume = v;
+    }
+  }
+
+  // Ducking effect: temporarily lower volume
+  function duckBgMusic(isDucked) {
+    if (!ttsSettings.bgMusic.enabled) return;
+    const targetVol = isDucked ? (ttsSettings.bgMusic.volume * 0.3) : ttsSettings.bgMusic.volume;
+    
+    if (bgMusicGainNode && bgMusicContext) {
+      bgMusicGainNode.gain.linearRampToValueAtTime(targetVol, bgMusicContext.currentTime + 0.5);
+    }
+    if (bgMusicCustomAudio) {
+      bgMusicCustomAudio.volume = targetVol;
     }
   }
 
@@ -987,6 +1135,102 @@
     nextChapRow.append(nextChapLabel, nextChapLabelWrap);
     body.appendChild(nextChapRow);
 
+    // Background Music Section
+    const bgMusicSection = document.createElement('div');
+    bgMusicSection.className = 'sts-settings-subcard';
+    bgMusicSection.innerHTML = `<div class="sts-subcard-title" style="margin-top: 10px; border-top: 1px solid var(--sts-border-light); padding-top: 10px;">Nhạc nền</div>`;
+
+    // Toggle
+    const bgMusicToggleRow = document.createElement('div');
+    bgMusicToggleRow.className = 'sts-setting-row sts-row-inline';
+    bgMusicToggleRow.innerHTML = `<div class="sts-setting-label">Phát nhạc nền</div>`;
+    
+    const bgMusicLabelWrap = document.createElement('label');
+    bgMusicLabelWrap.className = 'sts-toggle-wrap';
+    const bgMusicInput = document.createElement('input');
+    bgMusicInput.type = 'checkbox';
+    bgMusicInput.checked = !!ttsSettings.bgMusic.enabled;
+    const bgMusicSlider = document.createElement('span');
+    bgMusicSlider.className = 'sts-toggle-slider';
+    
+    const bgMusicOptionsWrap = document.createElement('div');
+    bgMusicOptionsWrap.style.display = ttsSettings.bgMusic.enabled ? 'block' : 'none';
+
+    bgMusicInput.addEventListener('change', () => {
+      ttsSettings.bgMusic.enabled = bgMusicInput.checked;
+      saveSettings();
+      bgMusicOptionsWrap.style.display = ttsSettings.bgMusic.enabled ? 'block' : 'none';
+      if (!ttsSettings.bgMusic.enabled) {
+        stopBgMusic();
+      } else if (isSpeaking && !isPaused) {
+        startBgMusic();
+      }
+    });
+
+    bgMusicLabelWrap.append(bgMusicInput, bgMusicSlider);
+    bgMusicToggleRow.append(bgMusicLabelWrap);
+    bgMusicSection.appendChild(bgMusicToggleRow);
+
+    // Track Select
+    const trackRow = document.createElement('div');
+    trackRow.className = 'sts-setting-row';
+    trackRow.innerHTML = `<div class="sts-setting-label">Loại âm thanh</div>`;
+    const trackSelect = document.createElement('select');
+    trackSelect.className = 'sts-bgmusic-select';
+    
+    const tracks = [
+      { id: 'rain', name: 'Tiếng mưa Rơi' },
+      { id: 'whitenoise', name: 'Nhạc nhiễu trắng' },
+      { id: 'brownnoise', name: 'Nhạc nhiễu nâu' },
+      { id: 'custom', name: 'URL tùy chỉnh' }
+    ];
+    
+    tracks.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.id;
+      opt.textContent = t.name;
+      if (t.id === ttsSettings.bgMusic.track) opt.selected = true;
+      trackSelect.appendChild(opt);
+    });
+
+    const customUrlInput = document.createElement('input');
+    customUrlInput.type = 'url';
+    customUrlInput.className = 'sts-text-input';
+    customUrlInput.placeholder = 'Nhập link file audio (.mp3, .wav)...';
+    customUrlInput.style.marginTop = '8px';
+    customUrlInput.style.display = ttsSettings.bgMusic.track === 'custom' ? 'block' : 'none';
+    customUrlInput.value = ttsSettings.bgMusic.customUrl || '';
+
+    trackSelect.addEventListener('change', () => {
+      ttsSettings.bgMusic.track = trackSelect.value;
+      customUrlInput.style.display = trackSelect.value === 'custom' ? 'block' : 'none';
+      saveSettings();
+      if (ttsSettings.bgMusic.enabled && isSpeaking && !isPaused) {
+        startBgMusic();
+      }
+    });
+
+    customUrlInput.addEventListener('change', () => {
+      ttsSettings.bgMusic.customUrl = customUrlInput.value;
+      saveSettings();
+      if (ttsSettings.bgMusic.enabled && ttsSettings.bgMusic.track === 'custom' && isSpeaking && !isPaused) {
+        startBgMusic();
+      }
+    });
+
+    trackRow.append(trackSelect, customUrlInput);
+    bgMusicOptionsWrap.appendChild(trackRow);
+
+    // Volume Slider
+    const bgVolRow = createSliderRow('Âm lượng', 'sts-bg-volume', 'sts-bg-volume-val', 0.05, 1.0, 0.05, ttsSettings.bgMusic.volume, (v) => {
+      setBgMusicVolume(v);
+      saveSettings();
+    });
+    bgMusicOptionsWrap.appendChild(bgVolRow);
+
+    bgMusicSection.appendChild(bgMusicOptionsWrap);
+    body.appendChild(bgMusicSection);
+
     // Load chrome voices async
     chrome.runtime.sendMessage({ action: 'tts-getVoices' }, (response) => {
       if (!response || !response.voices) return;
@@ -1063,6 +1307,7 @@
   // ---- Dispatch TTS ----
   function handlePlayResume() {
     if (isPaused) {
+      duckBgMusic(false);
       if (ttsSettings.engine === 'gemini') {
         resumeGeminiPlayback();
         isPaused = false;
@@ -1078,6 +1323,7 @@
       }
     } else if (isSpeaking) {
       // It's speaking, so this acts as PAUSE
+      duckBgMusic(true);
       if (ttsSettings.engine === 'gemini') {
         pauseGeminiPlayback();
       } else {
@@ -1094,6 +1340,8 @@
 
   function startSpeech(startChunkIndex = 0) {
     if (!currentText) return;
+
+    startBgMusic();
 
     if (ttsSettings.engine === 'gemini') {
       if (!ttsSettings.geminiApiKeys || ttsSettings.geminiApiKeys.length === 0) {
@@ -1173,6 +1421,7 @@
 
     els.stopBtn.addEventListener('click', () => {
       if (isSpeaking) {
+        stopBgMusic();
         if (ttsSettings.engine === 'gemini') stopGeminiPlayback();
         chrome.runtime.sendMessage({ action: 'tts-stop' });
         isSpeaking = false;
@@ -1202,6 +1451,7 @@
     });
 
     els.reloadBtn.addEventListener('click', () => {
+      stopBgMusic();
       if (ttsSettings.engine === 'gemini') stopGeminiPlayback();
       chrome.runtime.sendMessage({ action: 'tts-stop' });
       isSpeaking = false;
@@ -1302,6 +1552,7 @@
         els.status.textContent = ttsSettings.engine === 'gemini' ? 'Đang đọc (Gemini)...' : 'Đang đọc...';
         break;
       case 'end':
+        stopBgMusic();
         isSpeaking = false;
         isPaused = false;
         updateButtons();
@@ -1322,6 +1573,7 @@
         break;
       case 'error':
       case 'cancelled':
+        stopBgMusic();
         isSpeaking = false;
         isPaused = false;
         updateButtons();

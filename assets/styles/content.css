@@ -585,6 +585,42 @@ select option {
   color: var(--sts-text-main);
 }
 
+/* --- Settings Subcard (Bg Music) --- */
+.sts-settings-subcard {
+  display: flex;
+  flex-direction: column;
+}
+.sts-subcard-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--sts-text-dim);
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+.sts-bgmusic-select {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--sts-bg-card);
+  border: 1px solid var(--sts-border-light);
+  color: var(--sts-text-main);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px;
+}
+.sts-dark-theme .sts-bgmusic-select {
+  background-color: var(--sts-bg-hover);
+  border-color: var(--sts-border);
+}
+
 .sts-apikey-wrap {
   display: flex;
   align-items: center;
