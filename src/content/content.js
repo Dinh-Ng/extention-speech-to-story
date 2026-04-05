@@ -246,6 +246,10 @@
   }
 
   // ---- Gemini Audio Playback ----
+  let geminiMediaElement = null;
+  let geminiMediaSourceNode = null;
+  let geminiMediaObjectURL = null;
+
   function getAudioContext() {
     if (!audioContext) {
       audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
@@ -254,6 +258,31 @@
       analyser.connect(audioContext.destination);
     }
     return audioContext;
+  }
+
+  function createWavBlob(int16Array, sampleRate) {
+    const buffer = new ArrayBuffer(44 + int16Array.byteLength);
+    const view = new DataView(buffer);
+    const writeString = (offset, string) => {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    };
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + int16Array.byteLength, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeString(36, 'data');
+    view.setUint32(40, int16Array.byteLength, true);
+    new Uint8Array(buffer, 44).set(new Uint8Array(int16Array.buffer));
+    return new Blob([view], { type: 'audio/wav' });
   }
 
   function playBase64Pcm(base64Data) {
@@ -272,25 +301,36 @@
         }
 
         const int16 = new Int16Array(bytes.buffer);
-        const float32 = new Float32Array(int16.length);
-        for (let i = 0; i < int16.length; i++) {
-          float32[i] = int16[i] / 32768.0;
+        const blob = createWavBlob(int16, 24000);
+        
+        if (geminiMediaObjectURL) {
+          URL.revokeObjectURL(geminiMediaObjectURL);
+        }
+        geminiMediaObjectURL = URL.createObjectURL(blob);
+
+        if (!geminiMediaElement) {
+          geminiMediaElement = new Audio();
+          geminiMediaElement.preservesPitch = true;
+          geminiMediaSourceNode = ctx.createMediaElementSource(geminiMediaElement);
+          geminiMediaSourceNode.connect(analyser); // Connect to analyser instead of destination
         }
 
-        const audioBuffer = ctx.createBuffer(1, float32.length, 24000);
-        audioBuffer.getChannelData(0).set(float32);
-
-        const source = ctx.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(analyser); // Connect to analyser instead of destination
-        currentSource = source;
-
-        source.onended = () => {
+        geminiMediaElement.src = geminiMediaObjectURL;
+        geminiMediaElement.playbackRate = ttsSettings.rate || 1.0;
+        
+        geminiMediaElement.onended = () => {
           currentSource = null;
           resolve();
         };
 
-        source.start(0);
+        geminiMediaElement.onerror = (e) => {
+          currentSource = null;
+          reject(e);
+        };
+
+        currentSource = geminiMediaElement; // Used by other parts
+        geminiMediaElement.play().catch(reject);
+        
       } catch (err) {
         reject(err);
       }
@@ -464,7 +504,14 @@
     audioQueue = [];
     geminiAllChunksReceived = true;
     if (currentSource) {
-      try { currentSource.stop(); } catch (e) { }
+      try {
+        if (typeof currentSource.stop === 'function') {
+          currentSource.stop();
+        } else if (typeof currentSource.pause === 'function') {
+          currentSource.pause();
+          currentSource.src = '';
+        }
+      } catch (e) { }
       currentSource = null;
     }
     isPlayingGemini = false;
@@ -480,8 +527,10 @@
   function pauseGeminiPlayback() {
     const ctx = getAudioContext();
     if (ctx.state === 'running') {
-      pauseTime = ctx.currentTime;
       ctx.suspend();
+    }
+    if (currentSource && typeof currentSource.pause === 'function') {
+      currentSource.pause();
     }
     stopVisualizer();
   }
@@ -490,6 +539,10 @@
     const ctx = getAudioContext();
     if (ctx.state === 'suspended') {
       ctx.resume();
+    }
+    if (currentSource && typeof currentSource.play === 'function' && currentSource.paused) {
+      currentSource.playbackRate = ttsSettings.rate || 1.0;
+      currentSource.play().catch(e => console.error(e));
     }
     if (isPlayingGemini) {
       startVisualizer();
@@ -942,12 +995,22 @@
     themeRow.append(themeLabel, themePicker);
     body.appendChild(themeRow);
 
+    // Shared Settings (Speed)
+    const rateRow = createSliderRow('Tốc độ', 'sts-rate-slider', 'sts-rate-value', 0.5, 3.0, 0.1, ttsSettings.rate, (v) => { 
+      ttsSettings.rate = v; 
+      saveSettings(); 
+      // Update playback rate dynamically for Gemini
+      if (ttsSettings.engine === 'gemini' && currentSource && typeof currentSource.playbackRate !== 'undefined') {
+        currentSource.playbackRate = v;
+      }
+    });
+    body.appendChild(rateRow);
+
     // Chrome Section
     const chromeSection = document.createElement('div');
     chromeSection.id = 'sts-chrome-section';
     chromeSection.style.display = ttsSettings.engine === 'chrome' ? 'block' : 'none';
 
-    const rateRow = createSliderRow('Tốc độ', 'sts-rate-slider', 'sts-rate-value', 0.5, 3.0, 0.1, ttsSettings.rate, (v) => { ttsSettings.rate = v; saveSettings(); });
     const pitchRow = createSliderRow('Tông giọng', 'sts-pitch-slider', 'sts-pitch-value', 0.0, 2.0, 0.1, ttsSettings.pitch, (v) => { ttsSettings.pitch = v; saveSettings(); });
 
     const voiceRow = document.createElement('div');
@@ -959,7 +1022,7 @@
     voiceSelect.addEventListener('change', () => { ttsSettings.voiceName = voiceSelect.value; saveSettings(); });
     voiceRow.appendChild(voiceSelect);
 
-    chromeSection.append(rateRow, pitchRow, voiceRow);
+    chromeSection.append(pitchRow, voiceRow);
 
     // Gemini Section
     const geminiSection = document.createElement('div');

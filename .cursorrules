@@ -17,6 +17,7 @@ When you (the AI) are asked to generate a commit message, you must strictly foll
 2. **Body (Blank line after title, then details):**
    - Must contain a detailed, full explanation of the changes made.
    - Explain *what* was changed and *why*.
+   - **Strict Length Rule:** The entire body must be UNDER 300 characters.
 
 ### Example:
 ```
