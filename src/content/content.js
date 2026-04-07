@@ -961,55 +961,78 @@
 
   function createSettingsBody() {
     const body = document.createElement('div');
-    body.className = 'sts-settings-body';
-    
-    // Hint text
-    const hintText = document.createElement('div');
-    hintText.className = 'sts-settings-hint';
-    hintText.textContent = '* Tốc độ đọc, Giọng và Engine được lưu riêng biệt cho từng truyện.';
-    body.appendChild(hintText);
+    body.className = 'sts-settings-body sts-open';
 
-    // Theme Section (Top of settings)
-    const themeRow = document.createElement('div');
-    themeRow.className = 'sts-setting-row sts-row-inline';
-    const themeLabel = document.createElement('div');
-    themeLabel.className = 'sts-setting-label';
-    themeLabel.textContent = 'Giao diện';
+    // ---- Tab Bar ----
+    const tabBar = document.createElement('div');
+    tabBar.className = 'sts-tab-bar';
 
-    const themePicker = document.createElement('div');
-    themePicker.className = 'sts-theme-picker';
+    const tabs = [
+      { id: 'voice', label: '🎙 Giọng đọc' },
+      { id: 'music', label: '🎵 Nhạc nền' },
+      { id: 'general', label: '⚙ Chung' },
+    ];
 
-    ['system', 'light', 'dark'].forEach(t => {
+    const panels = {};
+
+    tabs.forEach(tab => {
       const btn = document.createElement('button');
-      btn.className = 'sts-theme-btn';
-      btn.dataset.theme = t;
-      btn.textContent = t === 'system' ? 'Tự động' : (t === 'light' ? 'Sáng' : 'Tối');
-      btn.addEventListener('click', () => {
-        ttsSettings.theme = t;
-        saveSettings();
-        applyTheme();
-      });
-      themePicker.appendChild(btn);
+      btn.className = 'sts-tab-btn';
+      btn.dataset.tab = tab.id;
+      btn.textContent = tab.label;
+      tabBar.appendChild(btn);
+
+      const panel = document.createElement('div');
+      panel.className = 'sts-tab-panel';
+      panel.dataset.panel = tab.id;
+      panel.style.display = 'none';
+      panels[tab.id] = panel;
     });
 
-    themeRow.append(themeLabel, themePicker);
-    body.appendChild(themeRow);
+    function switchTab(tabId) {
+      tabBar.querySelectorAll('.sts-tab-btn').forEach(b => b.classList.toggle('sts-tab-active', b.dataset.tab === tabId));
+      Object.entries(panels).forEach(([id, panel]) => {
+        panel.style.display = id === tabId ? 'block' : 'none';
+      });
+    }
 
-    // Shared Settings (Speed)
-    const rateRow = createSliderRow('Tốc độ', 'sts-rate-slider', 'sts-rate-value', 0.5, 3.0, 0.1, ttsSettings.rate, (v) => { 
-      ttsSettings.rate = v; 
-      saveSettings(); 
-      // Update playback rate dynamically for Gemini
+    tabBar.addEventListener('click', e => {
+      if (e.target.classList.contains('sts-tab-btn')) switchTab(e.target.dataset.tab);
+    });
+
+    body.appendChild(tabBar);
+    Object.values(panels).forEach(p => body.appendChild(p));
+
+    // ==========================================
+    // TAB 1: GIỌNG ĐỌC
+    // ==========================================
+    const voicePanel = panels['voice'];
+
+    // Hint
+    const hintText = document.createElement('div');
+    hintText.className = 'sts-settings-hint';
+    hintText.textContent = '* Tốc độ, Giọng và Engine được lưu riêng cho từng truyện.';
+    voicePanel.appendChild(hintText);
+
+    // Tốc độ (shared)
+    const rateRow = createSliderRow('Tốc độ', 'sts-rate-slider', 'sts-rate-value', 0.5, 3.0, 0.1, ttsSettings.rate, (v) => {
+      ttsSettings.rate = v;
+      saveSettings();
       if (ttsSettings.engine === 'gemini' && currentSource && typeof currentSource.playbackRate !== 'undefined') {
         currentSource.playbackRate = v;
       }
     });
-    body.appendChild(rateRow);
+    voicePanel.appendChild(rateRow);
 
     // Chrome Section
     const chromeSection = document.createElement('div');
     chromeSection.id = 'sts-chrome-section';
     chromeSection.style.display = ttsSettings.engine === 'chrome' ? 'block' : 'none';
+
+    const chromeDivider = document.createElement('div');
+    chromeDivider.className = 'sts-section-divider';
+    chromeDivider.textContent = 'Chrome TTS';
+    chromeSection.appendChild(chromeDivider);
 
     const pitchRow = createSliderRow('Tông giọng', 'sts-pitch-slider', 'sts-pitch-value', 0.0, 2.0, 0.1, ttsSettings.pitch, (v) => { ttsSettings.pitch = v; saveSettings(); });
 
@@ -1021,15 +1044,20 @@
     voiceSelect.innerHTML = `<option value="">Mặc định hệ thống</option>`;
     voiceSelect.addEventListener('change', () => { ttsSettings.voiceName = voiceSelect.value; saveSettings(); });
     voiceRow.appendChild(voiceSelect);
-
     chromeSection.append(pitchRow, voiceRow);
+    voicePanel.appendChild(chromeSection);
 
     // Gemini Section
     const geminiSection = document.createElement('div');
     geminiSection.id = 'sts-gemini-section';
     geminiSection.style.display = ttsSettings.engine === 'gemini' ? 'block' : 'none';
 
-    // --- Multi API Key Manager ---
+    const geminiDivider = document.createElement('div');
+    geminiDivider.className = 'sts-section-divider';
+    geminiDivider.textContent = 'Gemini AI';
+    geminiSection.appendChild(geminiDivider);
+
+    // API Key Manager
     const keyManagerRow = document.createElement('div');
     keyManagerRow.className = 'sts-setting-row';
     keyManagerRow.innerHTML = `<div class="sts-setting-label">API Keys <span class="sts-setting-value" id="sts-key-count">${ttsSettings.geminiApiKeys.length}</span></div>`;
@@ -1087,7 +1115,6 @@
       }
     }
 
-    // Add key row
     const addKeyWrap = document.createElement('div');
     addKeyWrap.className = 'sts-apikey-wrap';
     const addKeyInput = document.createElement('input');
@@ -1101,17 +1128,13 @@
     addKeyBtn.addEventListener('click', () => {
       const val = addKeyInput.value.trim();
       if (!val) return;
-      if (ttsSettings.geminiApiKeys.includes(val)) {
-        addKeyInput.value = '';
-        return;
-      }
+      if (ttsSettings.geminiApiKeys.includes(val)) { addKeyInput.value = ''; return; }
       ttsSettings.geminiApiKeys.push(val);
       addKeyInput.value = '';
       saveSettings();
       renderKeyList();
     });
     addKeyWrap.append(addKeyInput, addKeyBtn);
-
     keyManagerRow.append(keyList, addKeyWrap);
     renderKeyList();
 
@@ -1132,22 +1155,141 @@
     gVoiceRow.appendChild(gVoiceSelect);
 
     geminiSection.append(keyManagerRow, gVoiceRow);
-    body.append(chromeSection, geminiSection);
+    voicePanel.appendChild(geminiSection);
 
-    // Sleep Timer Section
-    const sleepRow = document.createElement('div');
-    sleepRow.className = 'sts-setting-row';
-    sleepRow.innerHTML = `<div class="sts-setting-label">Hẹn giờ tắt</div>`;
+    // Async load Chrome voices
+    chrome.runtime.sendMessage({ action: 'tts-getVoices' }, (response) => {
+      if (!response || !response.voices) return;
+      response.voices.forEach((voice) => {
+        const opt = document.createElement('option');
+        opt.value = voice.voiceName;
+        opt.textContent = `${voice.voiceName} (${voice.lang || '?'})`;
+        if (voice.voiceName === ttsSettings.voiceName) opt.selected = true;
+        voiceSelect.appendChild(opt);
+      });
+    });
+
+    // ==========================================
+    // TAB 2: NHẠC NỀN
+    // ==========================================
+    const musicPanel = panels['music'];
+
+    // Toggle
+    const bgMusicToggleRow = document.createElement('div');
+    bgMusicToggleRow.className = 'sts-setting-row sts-row-inline';
+    bgMusicToggleRow.innerHTML = `<div class="sts-setting-label">Phát nhạc nền</div>`;
+
+    const bgMusicLabelWrap = document.createElement('label');
+    bgMusicLabelWrap.className = 'sts-toggle-wrap';
+    const bgMusicInput = document.createElement('input');
+    bgMusicInput.type = 'checkbox';
+    bgMusicInput.checked = !!ttsSettings.bgMusic.enabled;
+    const bgMusicSlider = document.createElement('span');
+    bgMusicSlider.className = 'sts-toggle-slider';
+
+    const bgMusicOptionsWrap = document.createElement('div');
+    bgMusicOptionsWrap.style.display = ttsSettings.bgMusic.enabled ? 'block' : 'none';
+    bgMusicOptionsWrap.style.marginTop = '12px';
+
+    bgMusicInput.addEventListener('change', () => {
+      ttsSettings.bgMusic.enabled = bgMusicInput.checked;
+      saveSettings();
+      bgMusicOptionsWrap.style.display = ttsSettings.bgMusic.enabled ? 'block' : 'none';
+      if (!ttsSettings.bgMusic.enabled) { stopBgMusic(); }
+      else if (isSpeaking && !isPaused) { startBgMusic(); }
+    });
+
+    bgMusicLabelWrap.append(bgMusicInput, bgMusicSlider);
+    bgMusicToggleRow.appendChild(bgMusicLabelWrap);
+    musicPanel.appendChild(bgMusicToggleRow);
+
+    // Track Select
+    const trackRow = document.createElement('div');
+    trackRow.className = 'sts-setting-row';
+    trackRow.innerHTML = `<div class="sts-setting-label">Loại âm thanh</div>`;
+    const trackSelect = document.createElement('select');
+    trackSelect.className = 'sts-bgmusic-select';
+
+    [
+      { id: 'rain', name: '🌧 Tiếng mưa' },
+      { id: 'whitenoise', name: '⬜ Nhiễu trắng' },
+      { id: 'brownnoise', name: '🟤 Nhiễu nâu' },
+      { id: 'custom', name: '🔗 URL tùy chỉnh' }
+    ].forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.id;
+      opt.textContent = t.name;
+      if (t.id === ttsSettings.bgMusic.track) opt.selected = true;
+      trackSelect.appendChild(opt);
+    });
+
+    const customUrlInput = document.createElement('input');
+    customUrlInput.type = 'url';
+    customUrlInput.className = 'sts-text-input';
+    customUrlInput.placeholder = 'Nhập link file audio (.mp3, .wav)...';
+    customUrlInput.style.marginTop = '8px';
+    customUrlInput.style.display = ttsSettings.bgMusic.track === 'custom' ? 'block' : 'none';
+    customUrlInput.value = ttsSettings.bgMusic.customUrl || '';
+
+    trackSelect.addEventListener('change', () => {
+      ttsSettings.bgMusic.track = trackSelect.value;
+      customUrlInput.style.display = trackSelect.value === 'custom' ? 'block' : 'none';
+      saveSettings();
+      if (ttsSettings.bgMusic.enabled && isSpeaking && !isPaused) startBgMusic();
+    });
+    customUrlInput.addEventListener('change', () => {
+      ttsSettings.bgMusic.customUrl = customUrlInput.value;
+      saveSettings();
+      if (ttsSettings.bgMusic.enabled && ttsSettings.bgMusic.track === 'custom' && isSpeaking && !isPaused) startBgMusic();
+    });
+
+    trackRow.append(trackSelect, customUrlInput);
+    bgMusicOptionsWrap.appendChild(trackRow);
+
+    // Volume
+    const bgVolRow = createSliderRow('Âm lượng nhạc nền', 'sts-bg-volume', 'sts-bg-volume-val', 0.05, 1.0, 0.05, ttsSettings.bgMusic.volume, (v) => {
+      setBgMusicVolume(v);
+      saveSettings();
+    });
+    bgMusicOptionsWrap.appendChild(bgVolRow);
+    musicPanel.appendChild(bgMusicOptionsWrap);
+
+    // ==========================================
+    // TAB 3: CHUNG
+    // ==========================================
+    const generalPanel = panels['general'];
+
+    // Theme
+    const themeRow = document.createElement('div');
+    themeRow.className = 'sts-setting-row';
+    const themeLabel = document.createElement('div');
+    themeLabel.className = 'sts-setting-label';
+    themeLabel.textContent = 'Giao diện';
+    const themePicker = document.createElement('div');
+    themePicker.className = 'sts-theme-picker';
+    themePicker.style.marginTop = '8px';
+
+    ['system', 'light', 'dark'].forEach(t => {
+      const btn = document.createElement('button');
+      btn.className = 'sts-theme-btn';
+      btn.dataset.theme = t;
+      btn.textContent = t === 'system' ? '🖥 Tự động' : (t === 'light' ? '☀ Sáng' : '🌙 Tối');
+      btn.addEventListener('click', () => { ttsSettings.theme = t; saveSettings(); applyTheme(); });
+      themePicker.appendChild(btn);
+    });
+    themeRow.append(themeLabel, themePicker);
+    generalPanel.appendChild(themeRow);
+
+    // Sleep Timer
+    const sleepDivider = document.createElement('div');
+    sleepDivider.className = 'sts-section-divider';
+    sleepDivider.textContent = 'Hẹn giờ tắt';
+    generalPanel.appendChild(sleepDivider);
 
     const sleepBtnWrap = document.createElement('div');
     sleepBtnWrap.className = 'sts-sleep-wrap';
 
-    const sleepPresets = [
-      { label: '15 phút', minutes: 15 },
-      { label: '30 phút', minutes: 30 },
-      { label: '60 phút', minutes: 60 },
-    ];
-    sleepPresets.forEach(({ label, minutes }) => {
+    [{ label: '15 phút', minutes: 15 }, { label: '30 phút', minutes: 30 }, { label: '60 phút', minutes: 60 }].forEach(({ label, minutes }) => {
       const btn = document.createElement('button');
       btn.className = 'sts-sleep-btn';
       btn.dataset.minutes = minutes;
@@ -1169,142 +1311,33 @@
     const sleepStatus = document.createElement('div');
     sleepStatus.id = 'sts-sleep-status';
     sleepStatus.className = 'sts-sleep-status';
+    generalPanel.append(sleepBtnWrap, sleepStatus);
 
-    sleepRow.append(sleepBtnWrap, sleepStatus);
-    body.appendChild(sleepRow);
+    // Auto Next Chapter
+    const nextChapDivider = document.createElement('div');
+    nextChapDivider.className = 'sts-section-divider';
+    nextChapDivider.textContent = 'Điều hướng';
+    generalPanel.appendChild(nextChapDivider);
 
-    // Auto Next Chapter Section
     const nextChapRow = document.createElement('div');
     nextChapRow.className = 'sts-setting-row sts-row-inline';
-    
     const nextChapLabel = document.createElement('div');
     nextChapLabel.className = 'sts-setting-label';
     nextChapLabel.textContent = 'Tự động chuyển chương';
-
     const nextChapLabelWrap = document.createElement('label');
     nextChapLabelWrap.className = 'sts-toggle-wrap';
     const nextChapInput = document.createElement('input');
     nextChapInput.type = 'checkbox';
     nextChapInput.checked = !!ttsSettings.autoNextChapter;
-    const nextChapSlider = document.createElement('span');
-    nextChapSlider.className = 'sts-toggle-slider';
-
-    nextChapInput.addEventListener('change', () => {
-      ttsSettings.autoNextChapter = nextChapInput.checked;
-      saveSettings();
-    });
-
-    nextChapLabelWrap.append(nextChapInput, nextChapSlider);
+    const nextChapSliderEl = document.createElement('span');
+    nextChapSliderEl.className = 'sts-toggle-slider';
+    nextChapInput.addEventListener('change', () => { ttsSettings.autoNextChapter = nextChapInput.checked; saveSettings(); });
+    nextChapLabelWrap.append(nextChapInput, nextChapSliderEl);
     nextChapRow.append(nextChapLabel, nextChapLabelWrap);
-    body.appendChild(nextChapRow);
+    generalPanel.appendChild(nextChapRow);
 
-    // Background Music Section
-    const bgMusicSection = document.createElement('div');
-    bgMusicSection.className = 'sts-settings-subcard';
-    bgMusicSection.innerHTML = `<div class="sts-subcard-title" style="margin-top: 10px; border-top: 1px solid var(--sts-border-light); padding-top: 10px;">Nhạc nền</div>`;
-
-    // Toggle
-    const bgMusicToggleRow = document.createElement('div');
-    bgMusicToggleRow.className = 'sts-setting-row sts-row-inline';
-    bgMusicToggleRow.innerHTML = `<div class="sts-setting-label">Phát nhạc nền</div>`;
-    
-    const bgMusicLabelWrap = document.createElement('label');
-    bgMusicLabelWrap.className = 'sts-toggle-wrap';
-    const bgMusicInput = document.createElement('input');
-    bgMusicInput.type = 'checkbox';
-    bgMusicInput.checked = !!ttsSettings.bgMusic.enabled;
-    const bgMusicSlider = document.createElement('span');
-    bgMusicSlider.className = 'sts-toggle-slider';
-    
-    const bgMusicOptionsWrap = document.createElement('div');
-    bgMusicOptionsWrap.style.display = ttsSettings.bgMusic.enabled ? 'block' : 'none';
-
-    bgMusicInput.addEventListener('change', () => {
-      ttsSettings.bgMusic.enabled = bgMusicInput.checked;
-      saveSettings();
-      bgMusicOptionsWrap.style.display = ttsSettings.bgMusic.enabled ? 'block' : 'none';
-      if (!ttsSettings.bgMusic.enabled) {
-        stopBgMusic();
-      } else if (isSpeaking && !isPaused) {
-        startBgMusic();
-      }
-    });
-
-    bgMusicLabelWrap.append(bgMusicInput, bgMusicSlider);
-    bgMusicToggleRow.append(bgMusicLabelWrap);
-    bgMusicSection.appendChild(bgMusicToggleRow);
-
-    // Track Select
-    const trackRow = document.createElement('div');
-    trackRow.className = 'sts-setting-row';
-    trackRow.innerHTML = `<div class="sts-setting-label">Loại âm thanh</div>`;
-    const trackSelect = document.createElement('select');
-    trackSelect.className = 'sts-bgmusic-select';
-    
-    const tracks = [
-      { id: 'rain', name: 'Tiếng mưa Rơi' },
-      { id: 'whitenoise', name: 'Nhạc nhiễu trắng' },
-      { id: 'brownnoise', name: 'Nhạc nhiễu nâu' },
-      { id: 'custom', name: 'URL tùy chỉnh' }
-    ];
-    
-    tracks.forEach(t => {
-      const opt = document.createElement('option');
-      opt.value = t.id;
-      opt.textContent = t.name;
-      if (t.id === ttsSettings.bgMusic.track) opt.selected = true;
-      trackSelect.appendChild(opt);
-    });
-
-    const customUrlInput = document.createElement('input');
-    customUrlInput.type = 'url';
-    customUrlInput.className = 'sts-text-input';
-    customUrlInput.placeholder = 'Nhập link file audio (.mp3, .wav)...';
-    customUrlInput.style.marginTop = '8px';
-    customUrlInput.style.display = ttsSettings.bgMusic.track === 'custom' ? 'block' : 'none';
-    customUrlInput.value = ttsSettings.bgMusic.customUrl || '';
-
-    trackSelect.addEventListener('change', () => {
-      ttsSettings.bgMusic.track = trackSelect.value;
-      customUrlInput.style.display = trackSelect.value === 'custom' ? 'block' : 'none';
-      saveSettings();
-      if (ttsSettings.bgMusic.enabled && isSpeaking && !isPaused) {
-        startBgMusic();
-      }
-    });
-
-    customUrlInput.addEventListener('change', () => {
-      ttsSettings.bgMusic.customUrl = customUrlInput.value;
-      saveSettings();
-      if (ttsSettings.bgMusic.enabled && ttsSettings.bgMusic.track === 'custom' && isSpeaking && !isPaused) {
-        startBgMusic();
-      }
-    });
-
-    trackRow.append(trackSelect, customUrlInput);
-    bgMusicOptionsWrap.appendChild(trackRow);
-
-    // Volume Slider
-    const bgVolRow = createSliderRow('Âm lượng', 'sts-bg-volume', 'sts-bg-volume-val', 0.05, 1.0, 0.05, ttsSettings.bgMusic.volume, (v) => {
-      setBgMusicVolume(v);
-      saveSettings();
-    });
-    bgMusicOptionsWrap.appendChild(bgVolRow);
-
-    bgMusicSection.appendChild(bgMusicOptionsWrap);
-    body.appendChild(bgMusicSection);
-
-    // Load chrome voices async
-    chrome.runtime.sendMessage({ action: 'tts-getVoices' }, (response) => {
-      if (!response || !response.voices) return;
-      response.voices.forEach((voice) => {
-        const opt = document.createElement('option');
-        opt.value = voice.voiceName;
-        opt.textContent = `${voice.voiceName} (${voice.lang || '?'})`;
-        if (voice.voiceName === ttsSettings.voiceName) opt.selected = true;
-        voiceSelect.appendChild(opt);
-      });
-    });
+    // Activate first tab
+    switchTab('voice');
 
     return body;
   }

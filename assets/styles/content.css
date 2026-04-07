@@ -406,6 +406,7 @@
   border: 1px solid var(--sts-border);
   border-radius: 16px;
   width: 360px;
+  height: 520px;
   max-height: 85vh;
   display: flex;
   flex-direction: column;
@@ -482,10 +483,66 @@
   padding: 0;
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
 }
 
 .sts-settings-body.sts-open {
-  padding: 20px;
+  padding: 0;
+}
+
+/* --- Tab Bar --- */
+.sts-tab-bar {
+  display: flex;
+  border-bottom: 1px solid var(--sts-border-light);
+  background: var(--sts-bg-card);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.sts-tab-btn {
+  flex: 1;
+  padding: 12px 4px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--sts-text-dim);
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  white-space: nowrap;
+}
+
+.sts-tab-btn:hover {
+  color: var(--sts-text-main);
+  background: var(--sts-bg-hover);
+}
+
+.sts-tab-btn.sts-tab-active {
+  color: var(--sts-primary);
+  border-bottom-color: var(--sts-primary);
+  font-weight: 600;
+}
+
+/* --- Tab Panel --- */
+.sts-tab-panel {
+  padding: 16px 20px;
+}
+
+/* --- Section Divider --- */
+.sts-section-divider {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--sts-text-dim);
+  padding: 6px 0 8px 0;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--sts-border-light);
 }
 
 /* --- Settings Inputs --- */
