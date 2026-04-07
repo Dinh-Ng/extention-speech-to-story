@@ -15,7 +15,9 @@
   - **Wave Visualizer**: Hiệu ứng sóng âm động tương ứng với giọng đọc (chỉ dành cho Gemini).
   - Thanh tiến trình trực quan hiển thị phần trăm khi tạo audio từ AI.
 - **Tính năng điều khiển đầy đủ**: Phát (Play), Tạm dừng (Pause), Tiếp tục (Resume), Dừng (Stop) và Tải lại chương (Reload).
-- **Lưu cấu hình theo truyện**: Tự động nhớ giọng đọc và tốc độ riêng cho từng bộ truyện khác nhau. Khách hàng không cần chỉnh lại giọng khi đổi từ truyện tiên hiệp sang ngôn tình.
+- **Lưu cấu hình theo truyện**: Tự động nhớ giọng đọc và tốc độ riêng cho từng bộ truyện khác nhau.
+- **Phát nhạc nền (Ambient Sounds)**: Tích hợp các loại âm thanh môi trường như tiếng mưa, white noise, brown noise giúp tăng sự tập trung khi nghe truyện. Có hiệu ứng ducking (giảm âm lượng khi tạm dừng đọc) tạo trải nghiệm cao cấp.
+- **Tùy chỉnh tốc độ Gemini (Speed control)**: Không giống các extension khác bị méo giọng khi tăng tốc đọc AI, hệ thống của chúng tôi sử dụng công nghệ xử lý WAV Blob giúp giữ nguyên cao độ tự nhiên ngay cả khi nghe ở tốc độ cao (0.5x - 3.0x).
 - **Hỗ trợ truyện siêu dài**: Đối với engine Gemini, hệ thống tự động nhận diện và chia nhỏ văn bản vượt giới hạn giúp đảm bảo đọc trọn vẹn cả những chương truyện.
 - **Quản lý đa dạng Gemini API Key**: Hỗ trợ lưu nhiều API key cùng lúc. Tự động chuyển đổi sang key dự phòng khi gặp lỗi Quota (429) hoặc lỗi server (500/503).
 - **Hẹn giờ tắt (Sleep Timer)**: Tự động dừng phát sau 15, 30 hoặc 60 phút với bộ đếm ngược thời gian thực.
@@ -62,6 +64,11 @@ Extension này chưa được tải lên Chrome Web Store. Bạn có thể cài 
    - Chọn một trong số 30 giọng đọc.
    - Click chọn key muốn sử dụng (key đang hoạt động sẽ có viền màu xanh).
    - Bấm ▶ (Play). Extension sẽ phân giải văn bản và tự động đồng bộ hóa để đọc cho bạn với tiến trình phần trăm rõ ràng.
+
+### 5. Sử dụng Nhạc nền (Background Music):
+- Trong Popup Cài đặt (⚙), kéo xuống mục **Nhạc nền**.
+- Bật toggle **Phát nhạc nền** và chọn loại âm thanh (Mưa, White Noise, ...) hoặc dán URL nhạc của bạn.
+- Điều chỉnh âm lượng nhạc nền độc lập. Nhạc sẽ tự động nhỏ đi khi bạn bấm Tạm dừng lời đọc (Ducking Effect).
 
 ## Cài đặt riêng tư & API
 

@@ -2,6 +2,12 @@
 
 Tất cả các thay đổi quan trọng đối với dự án "Đọc truyện Speech" sẽ được ghi lại trong file này. Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [3.3.0] - 2026-04-07
+### Added
+- **Phát nhạc nền (Background Music)**: Tích hợp bộ tạo âm thanh môi trường (Tiếng mưa, Nhiễu trắng, Nhiễu nâu) sử dụng Web Audio API và hỗ trợ URL tùy chỉnh.
+- **Tùy chỉnh tốc độ Gemini**: Hỗ trợ thay đổi tốc độ đọc (Rate) cho engine Gemini mà vẫn giữ nguyên cao độ tự nhiên (Preserve Pitch).
+- **Hiệu ứng Ducking**: Tự động giảm âm lượng nhạc nền khi tạm dừng đọc để tạo trải nghiệm mượt mà.
+
 ## [3.2.0] - 2026-03-28
 ### Changed
 - **Tái cấu trúc UI Settings**: Tách phần Cài đặt âm thanh từ dạng accordion trong Card thành một popup/modal riêng biệt.

@@ -4,6 +4,8 @@ Dưới đây là kế hoạch phát triển và những mục tiêu mở rộng
 
 | Status | Description |
 | :--- | :--- |
+| ✅ Complete | **Phát nhạc nền (Background Music)**: Tích hợp âm thanh mưa/nhiễu trắng sử dụng Web Audio API. |
+| ✅ Complete | **Tùy chỉnh tốc độ Gemini (Rate control)**: Điều chỉnh tốc độ đọc AI mà không méo giọng. |
 | ✅ Complete | **Chuyển đổi giao diện Sáng / Tối**: Tích hợp Dark/Light theme và tự động theo hệ thống. |
 | ✅ Complete | **Quản lý đa dạng Gemini API Key**: Hỗ trợ nhiều key và tự động chuyển đổi khi hết quota. |
 | ✅ Complete | **Chế độ trình phát thu nhỏ (Mini Player Mode)**: Giao diện tối giản tiết kiệm diện tích. |
