@@ -10,7 +10,7 @@
 - **Giao diện hiện đại**:
   - Giao diện dạng Floating Card (thẻ nổi) đẹp mắt ở góc màn hình.
   - **Mini Player Mode**: Thu nhỏ giao diện về dạng "viên nang" cực gọn chỉ hiển thị nút điều khiển thiết yếu.
-  - **Settings Popup**: Phần cài đặt được tách riêng thành popup với hiệu ứng modal chuyên nghiệp (mở bằng nút ⚙).
+  - **Settings Popup**: Phần cài đặt được tổ chức khoa học dưới dạng **3 Tab** (Giọng đọc, Nhạc nền, Chung) với hiệu ứng modal chuyên nghiệp (mở bằng nút ⚙). Chiều cao modal được cố định giúp thao tác mượt mà.
   - Hỗ trợ đổi giao diện **Sáng/Tối** (hoặc tự động theo hệ thống).
   - **Wave Visualizer**: Hiệu ứng sóng âm động tương ứng với giọng đọc (chỉ dành cho Gemini).
   - Thanh tiến trình trực quan hiển thị phần trăm khi tạo audio từ AI.
@@ -54,21 +54,24 @@ Extension này chưa được tải lên Chrome Web Store. Bạn có thể cài 
 1. Truy cập vào bất kỳ chương truyện nào trên các trang được hỗ trợ (ví dụ: [truyenfull.vision](https://truyenfull.vision) hoặc [tangthuvien.net](https://tangthuvien.net)).
 2. Khi trang được load xong, một thanh điều khiển **Đọc truyện Speech** sẽ xuất hiện ở góc dưới bên phải màn hình.
 3. **Nếu bạn muốn dùng chế độ cơ bản (Chrome)**:
-   - Tab "Chrome" được chọn sẵn.
+   - Tab **Giọng đọc** được chọn sẵn.
    - Bạn chỉ cần bấm nút ▶ (Play) để bắt đầu nghe.
    - Bấm ⚙ *Cài đặt âm thanh* nếu cần đổi tốc độ, cao độ hay loại giọng hệ thống.
 4. **Nếu bạn muốn dùng chế độ AI (Gemini TTS)**:
    - Click vào thẻ **Gemini** ở phần đầu Card để đổi công cụ.
-   - Bấm ⚙ *Cài đặt âm thanh*.
+   - Bấm ⚙ *Cài đặt âm thanh*, chọn tab **Giọng đọc**.
    - Nhập **Google AI Studio API Key** của bạn vào ô tương ứng. Bạn có thể thêm nhiều key để hệ thống tự động dự phòng. (Lấy API Key miễn phí tại [Google AI Studio](https://aistudio.google.com/apikey)).
-   - Chọn một trong số 30 giọng đọc.
+   - Chọn một trong số 30 giọng đọc AI.
    - Click chọn key muốn sử dụng (key đang hoạt động sẽ có viền màu xanh).
    - Bấm ▶ (Play). Extension sẽ phân giải văn bản và tự động đồng bộ hóa để đọc cho bạn với tiến trình phần trăm rõ ràng.
 
 ### 5. Sử dụng Nhạc nền (Background Music):
-- Trong Popup Cài đặt (⚙), kéo xuống mục **Nhạc nền**.
+- Trong Popup Cài đặt (⚙), chọn tab **Nhạc nền**.
 - Bật toggle **Phát nhạc nền** và chọn loại âm thanh (Mưa, White Noise, ...) hoặc dán URL nhạc của bạn.
 - Điều chỉnh âm lượng nhạc nền độc lập. Nhạc sẽ tự động nhỏ đi khi bạn bấm Tạm dừng lời đọc (Ducking Effect).
+
+### 6. Cài đặt khác:
+- Vào tab **Chung** để đổi giao diện (Theme), cài đặt Hẹn giờ tắt hoặc Tự động chuyển chương.
 
 ## Cài đặt riêng tư & API
 

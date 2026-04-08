@@ -2,6 +2,12 @@
 
 Tất cả các thay đổi quan trọng đối với dự án "Đọc truyện Speech" sẽ được ghi lại trong file này. Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [3.4.0] - 2026-04-08
+### Changed
+- **Thiết kế lại Settings Popup (3-Tab Layout)**: Chuyển đổi danh sách cài đặt dài thành hệ thống 3 tab (🎙 Giọng đọc, 🎵 Nhạc nền, ⚙ Chung) giúp phân loại tính năng khoa học và dễ nhìn hơn.
+- **Tối ưu hóa hiển thị**: Thêm các Section Divider để gom nhóm các cài đặt liên quan bên trong mỗi tab.
+- **Ổn định kích thước**: Cố định chiều cao modal để tránh tình trạng popup tự động co giãn/nhảy kích thước khi người dùng chuyển đổi giữa các tab.
+
 ## [3.3.0] - 2026-04-07
 ### Added
 - **Phát nhạc nền (Background Music)**: Tích hợp bộ tạo âm thanh môi trường (Tiếng mưa, Nhiễu trắng, Nhiễu nâu) sử dụng Web Audio API và hỗ trợ URL tùy chỉnh.
