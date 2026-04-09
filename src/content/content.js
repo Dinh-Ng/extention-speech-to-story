@@ -24,6 +24,10 @@
   let geminiPlayedChunks = 0;
   let animationFrameId = null;
 
+  // Download Audio state
+  let isDownloadingAudio = false;
+  let downloadChunks = [];  // stores { audioData: base64, chunkIndex } during download
+
   // Sleep Timer state
   let sleepTimerId = null;
   let sleepCountdownId = null;
@@ -499,6 +503,113 @@
     }, 1000);
   }
 
+  // ---- Download Audio Logic ----
+  function startDownloadGeminiAudio() {
+    if (!currentText) {
+      if (els) els.status.textContent = 'Chưa có nội dung để tải.';
+      return;
+    }
+    if (!ttsSettings.geminiApiKeys || ttsSettings.geminiApiKeys.length === 0) {
+      if (els) els.status.textContent = 'Vui lòng thêm API Key Gemini trước.';
+      return;
+    }
+
+    // Reset download state
+    isDownloadingAudio = true;
+    downloadChunks = [];
+
+    if (els) {
+      els.downloadBtn.disabled = true;
+      els.downloadBtn.innerHTML = '…';
+      els.status.textContent = 'Đang chuẩn bị tải audio...';
+      updateProgressBar(0);
+    }
+
+    chrome.runtime.sendMessage({
+      action: 'gemini-tts-speak',
+      text: currentText,
+      apiKeys: ttsSettings.geminiApiKeys,
+      activeKeyIndex: ttsSettings.geminiActiveKeyIndex || 0,
+      geminiVoice: ttsSettings.geminiVoice,
+      startChunkIndex: 0
+    }, (resp) => {
+      if (!isDownloadingAudio) return; // was cancelled
+      if (resp && !resp.success && resp.error) {
+        isDownloadingAudio = false;
+        downloadChunks = [];
+        if (els) {
+          els.downloadBtn.disabled = false;
+          els.downloadBtn.innerHTML = '⤓';
+          els.status.textContent = 'Lỗi tải audio: ' + resp.error;
+          hideProgressBar();
+        }
+      }
+    });
+  }
+
+  function finishDownloadAudio() {
+    if (!isDownloadingAudio || downloadChunks.length === 0) return;
+
+    try {
+      // Sort by chunk order just in case
+      downloadChunks.sort((a, b) => a.chunkIndex - b.chunkIndex);
+
+      // Decode each base64 chunk into Int16Array
+      const int16Arrays = downloadChunks.map(c => {
+        const binaryStr = atob(c.audioData);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+        return new Int16Array(bytes.buffer);
+      });
+
+      // Merge all Int16Arrays into one
+      const totalLength = int16Arrays.reduce((sum, arr) => sum + arr.length, 0);
+      const merged = new Int16Array(totalLength);
+      let offset = 0;
+      for (const arr of int16Arrays) {
+        merged.set(arr, offset);
+        offset += arr.length;
+      }
+
+      // Build WAV blob using existing helper
+      const wavBlob = createWavBlob(merged, 24000);
+      const url = URL.createObjectURL(wavBlob);
+
+      // Derive filename from page title
+      const title = document.title.replace(/[\\/:*?"<>|]/g, '_').slice(0, 80) || 'audio';
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title}.wav`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+      if (els) els.status.textContent = '✅ Đã tải xuống thành công!';
+    } catch (err) {
+      if (els) els.status.textContent = 'Lỗi tạo file WAV: ' + err.message;
+    } finally {
+      isDownloadingAudio = false;
+      downloadChunks = [];
+      if (els) {
+        els.downloadBtn.disabled = false;
+        els.downloadBtn.innerHTML = '⤓';
+        hideProgressBar();
+      }
+    }
+  }
+
+  function cancelDownloadAudio() {
+    isDownloadingAudio = false;
+    downloadChunks = [];
+    if (els) {
+      els.downloadBtn.disabled = false;
+      els.downloadBtn.innerHTML = '⤓';
+      hideProgressBar();
+      els.status.textContent = 'Đã huỷ tải audio.';
+    }
+  }
+
   function stopGeminiPlayback() {
     geminiStopped = true;
     audioQueue = [];
@@ -843,7 +954,13 @@
     stopBtn.title = 'Dừng (Stop)';
     stopBtn.disabled = true;
 
-    btnRow.append(reloadBtn, playBtn, stopBtn);
+    const downloadBtn = document.createElement('button');
+    downloadBtn.className = 'sts-btn-icon sts-btn-download';
+    downloadBtn.innerHTML = '⤓';
+    downloadBtn.title = 'Tải audio xuống (WAV)';
+    downloadBtn.disabled = true;
+
+    btnRow.append(reloadBtn, playBtn, stopBtn, downloadBtn);
 
     const statusWrap = document.createElement('div');
     statusWrap.className = 'sts-status-wrap';
@@ -943,6 +1060,7 @@
       playBtn,
       stopBtn,
       reloadBtn,
+      downloadBtn,
       status: statusText,
       progressWrap,
       progressBar,
@@ -1509,6 +1627,14 @@
       els.playBtn.title = 'Đọc (Play)';
       els.stopBtn.disabled = true;
     }
+
+    if (ttsSettings.engine === 'gemini' && currentText && !isDownloadingAudio) {
+      els.downloadBtn.disabled = false;
+      els.downloadBtn.title = 'Tải audio xuống (WAV)';
+    } else if (!isDownloadingAudio) {
+      els.downloadBtn.disabled = true;
+      els.downloadBtn.title = ttsSettings.engine !== 'gemini' ? 'Chỉ hỗ trợ tải với Gemini AI' : 'Đang xử lý...';
+    }
   }
 
   // ---- Events & Handlers ----
@@ -1530,6 +1656,21 @@
         clearInterval(autoNextTimerId);
         autoNextTimerId = null;
       }
+      if (isDownloadingAudio) {
+        cancelDownloadAudio();
+      }
+    });
+
+    els.downloadBtn.addEventListener('click', () => {
+      if (ttsSettings.engine !== 'gemini') {
+        showErrorPopup('Tính năng Tải audio chỉ hỗ trợ engine Gemini AI.');
+        return;
+      }
+      if (isDownloadingAudio || !currentText) return;
+      if (isSpeaking) {
+        els.stopBtn.click(); // Stop current playback before downloading
+      }
+      startDownloadGeminiAudio();
     });
 
     els.resumeYesBtn.addEventListener('click', () => {
@@ -1601,19 +1742,30 @@
 
     switch (message.action) {
       case 'gemini-start':
-        geminiTotalChunks = message.totalChunks;
-        geminiReceivedChunks = 0;
-        geminiAllChunksReceived = false;
-        geminiPlayedChunks = 0;
-        isSpeaking = true;
-        isPaused = false;
-        updateButtons();
-        els.status.textContent = `Đang tạo audio (0/${geminiTotalChunks})...`;
-        updateProgressBar(0);
+        if (isDownloadingAudio) {
+          // Download mode: just track total chunks
+          geminiTotalChunks = message.totalChunks;
+          els.status.textContent = `Đang tải audio (0/${geminiTotalChunks})...`;
+          updateProgressBar(0);
+        } else {
+          geminiTotalChunks = message.totalChunks;
+          geminiReceivedChunks = 0;
+          geminiAllChunksReceived = false;
+          geminiPlayedChunks = 0;
+          isSpeaking = true;
+          isPaused = false;
+          updateButtons();
+          els.status.textContent = `Đang tạo audio (0/${geminiTotalChunks})...`;
+          updateProgressBar(0);
+        }
         break;
 
       case 'gemini-progress':
-        if (message.phase === 'fetching') {
+        if (isDownloadingAudio) {
+          const dlPct = Math.round(((message.chunkIndex + 1) / message.totalChunks) * 100);
+          els.status.textContent = `Đang tải phần ${message.chunkIndex + 1}/${message.totalChunks}...`;
+          updateProgressBar(dlPct);
+        } else if (message.phase === 'fetching') {
           const fetchPct = Math.round(((message.chunkIndex) / message.totalChunks) * 100);
           els.status.textContent = `Đang tạo phần ${message.chunkIndex + 1}/${message.totalChunks}...`;
           updateProgressBar(fetchPct);
@@ -1621,10 +1773,20 @@
         break;
 
       case 'gemini-audio-chunk':
-        geminiReceivedChunks++;
-        if (message.isLast) geminiAllChunksReceived = true;
-        audioQueue.push(message);
-        if (!isPlayingGemini && !geminiStopped) processAudioQueue();
+        if (isDownloadingAudio) {
+          // Download mode: collect chunks instead of playing
+          downloadChunks.push({ audioData: message.audioData, chunkIndex: message.chunkIndex });
+          const dlPct = Math.round((downloadChunks.length / geminiTotalChunks) * 100);
+          els.status.textContent = `Đã nhận ${downloadChunks.length}/${geminiTotalChunks} phần...`;
+          updateProgressBar(dlPct);
+          if (message.isLast) finishDownloadAudio();
+        } else {
+          // Normal playback mode
+          geminiReceivedChunks++;
+          if (message.isLast) geminiAllChunksReceived = true;
+          audioQueue.push(message);
+          if (!isPlayingGemini && !geminiStopped) processAudioQueue();
+        }
         break;
 
       case 'gemini-key-switch':
