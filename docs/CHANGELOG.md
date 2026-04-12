@@ -2,6 +2,10 @@
 
 Tất cả các thay đổi quan trọng đối với dự án "Đọc truyện Speech" sẽ được ghi lại trong file này. Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [3.5.0] - 2026-04-12
+### Added
+- **Tải Audio chương (Download Audio)**: Cho phép người dùng tải xuống toàn bộ audio của chương truyện hiện tại dưới định dạng `.wav`. Tính năng này được tích hợp trực tiếp vào thanh điều khiển chính (nút ⤓), hoạt động phối hợp với Gemini AI để tổng hợp và ghép nối các đoạn âm thanh một cách mượt mà.
+
 ## [3.4.0] - 2026-04-08
 ### Changed
 - **Thiết kế lại Settings Popup (3-Tab Layout)**: Chuyển đổi danh sách cài đặt dài thành hệ thống 3 tab (🎙 Giọng đọc, 🎵 Nhạc nền, ⚙ Chung) giúp phân loại tính năng khoa học và dễ nhìn hơn.

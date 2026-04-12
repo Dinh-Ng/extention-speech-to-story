@@ -21,7 +21,8 @@
 - **Hỗ trợ truyện siêu dài**: Đối với engine Gemini, hệ thống tự động nhận diện và chia nhỏ văn bản vượt giới hạn giúp đảm bảo đọc trọn vẹn cả những chương truyện.
 - **Quản lý đa dạng Gemini API Key**: Hỗ trợ lưu nhiều API key cùng lúc. Tự động chuyển đổi sang key dự phòng khi gặp lỗi Quota (429) hoặc lỗi server (500/503).
 - **Hẹn giờ tắt (Sleep Timer)**: Tự động dừng phát sau 15, 30 hoặc 60 phút với bộ đếm ngược thời gian thực.
-- **Tự động chuyển chương (Auto-Next Chapter)**: Tự động chuyển sang chương tiếp theo sau 5 giây khi đọc xong chương hiện tại.
+- **Tải xuống Audio (Download)**: Cho phép xuất audio toàn bộ chương đã trích xuất thành file `.wav` để nghe offline (Chỉ hỗ trợ cho Gemini engine).
+- **Tự động chuyển chương (Auto-Next Chapter)**: Tự động nhảy sang chương tiếp theo sau 5 giây khi đọc xong chương hiện tại.
 - **Lưu vị trí đọc (Save Reading Position)**: Ghi nhớ phần (chunk) đang đọc dở của Gemini TTS. Khi quay lại trang, extension sẽ hỏi bạn có muốn đọc tiếp từ vị trí cũ hay không.
 - **Hỗ trợ đa nền tảng**: Kiến trúc parser linh hoạt cho phép hỗ trợ nhiều trang web truyện khác nhau (hiện đã hỗ trợ Truyenfull và TangThuVien).
 - **Voice Consistency**: Tự động áp dụng lệnh "System Instruction" cho Gemini AI, đảm bảo mô hình giữ một giọng đọc ổn định xuyên suốt.
@@ -64,6 +65,9 @@ Extension này chưa được tải lên Chrome Web Store. Bạn có thể cài 
    - Chọn một trong số 30 giọng đọc AI.
    - Click chọn key muốn sử dụng (key đang hoạt động sẽ có viền màu xanh).
    - Bấm ▶ (Play). Extension sẽ phân giải văn bản và tự động đồng bộ hóa để đọc cho bạn với tiến trình phần trăm rõ ràng.
+7. **Tải xuống Audio (Download)**:
+   - Click biểu tượng `⤓` trên card điều khiển để tải audio của chương hiện tại (chỉ hỗ trợ engine Gemini).
+   - Extension sẽ tự động fetch và ghép nối các đoạn audio nhanh nhất có thể, sau đó lưu về máy dưới định dạng `.wav`.
 
 ### 5. Sử dụng Nhạc nền (Background Music):
 - Trong Popup Cài đặt (⚙), chọn tab **Nhạc nền**.
