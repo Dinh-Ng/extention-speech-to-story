@@ -319,6 +319,28 @@
   100% { background-position: -200% 0; }
 }
 
+/* --- Karaoke Text Highlight --- */
+.sts-karaoke-highlight {
+  background: rgba(66, 133, 244, 0.13) !important;
+  border-left: 3px solid #4285f4 !important;
+  border-radius: 0 6px 6px 0 !important;
+  padding-left: 8px !important;
+  margin-left: -11px !important;
+  transition: background 0.5s ease, border-color 0.5s ease;
+  scroll-margin-top: 120px;
+}
+.sts-light-theme ~ .sts-karaoke-highlight,
+body .sts-karaoke-highlight {
+  /* Inherits above — dark mode default */
+}
+/* Light-mode override: applied via page body class if available, else works on dark */
+@media (prefers-color-scheme: light) {
+  .sts-karaoke-highlight {
+    background: rgba(66, 133, 244, 0.09) !important;
+    border-left-color: #1a73e8 !important;
+  }
+}
+
 /* --- Resume Banner --- */
 .sts-resume-banner {
   background: var(--sts-bg-hover);
