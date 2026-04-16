@@ -1611,7 +1611,27 @@
       els.playBtn.disabled = true;
       return;
     }
-    currentText = chapterEl.innerText.trim();
+    // Clone chapter element to safely strip ads without modifying the live DOM
+    const chapterClone = chapterEl.cloneNode(true);
+    // Remove elements that look like ads (id/class containing 'ad', 'ads', 'banner')
+    const adSelectors = [
+      '[id*="ads"]', '[id*="ad-"]', '[class*="ads"]', '[class*="ad-"]',
+      '[id*="banner"]', '[class*="banner"]', 'ins', 'iframe'
+    ];
+    adSelectors.forEach(sel => {
+      chapterClone.querySelectorAll(sel).forEach(el => el.remove());
+    });
+
+    let rawText = chapterClone.innerText.trim();
+
+    // Normalize excessive dot-sequences (5+ consecutive dots → '...') to prevent Gemini TTS from hanging
+    rawText = rawText.replace(/\.{5,}/g, '...');
+    // Also normalize other excessive punctuation repeats (e.g. "---------")
+    rawText = rawText.replace(/-{5,}/g, '---');
+    rawText = rawText.replace(/_{5,}/g, '___');
+
+    currentText = rawText;
+
     if (currentText) {
       const charCount = currentText.length;
       els.status.textContent = `Đã tải: ${charCount.toLocaleString()} ký tự.`;
