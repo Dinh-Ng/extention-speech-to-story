@@ -2,6 +2,10 @@
 
 Tất cả các thay đổi quan trọng đối với dự án "Đọc truyện Speech" sẽ được ghi lại trong file này. Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [3.6.0] - 2026-04-15
+### Added
+- **Highlight văn bản Karaoke**: Tự động cuộn trang và tô sáng (highlight) đoạn văn bản đang được đọc khi sử dụng engine Gemini AI. Tính năng giúp người dùng dễ dàng theo dõi mạch truyện một cách trực quan.
+
 ## [3.5.0] - 2026-04-12
 ### Added
 - **Tải Audio chương (Download Audio)**: Cho phép người dùng tải xuống toàn bộ audio của chương truyện hiện tại dưới định dạng `.wav`. Tính năng này được tích hợp trực tiếp vào thanh điều khiển chính (nút ⤓), hoạt động phối hợp với Gemini AI để tổng hợp và ghép nối các đoạn âm thanh một cách mượt mà.
