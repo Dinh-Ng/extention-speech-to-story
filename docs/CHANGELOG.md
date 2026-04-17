@@ -2,6 +2,10 @@
 
 Tất cả các thay đổi quan trọng đối với dự án "Đọc truyện Speech" sẽ được ghi lại trong file này. Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [3.6.1] - 2026-04-17
+### Fixed
+- **Gemini TTS Freeze**: Khắc phục lỗi Gemini TTS bị đứng hoặc tạo ra audio im lặng khi gặp các đoạn dấu câu dài (ví dụ: `...........`) hoặc khi chứa quảng cáo (Ads) trong nội dung truyện bằng cách lọc Ads và chuẩn hoá dấu câu.
+
 ## [3.6.0] - 2026-04-15
 ### Added
 - **Highlight văn bản Karaoke**: Tự động cuộn trang và tô sáng (highlight) đoạn văn bản đang được đọc khi sử dụng engine Gemini AI. Tính năng giúp người dùng dễ dàng theo dõi mạch truyện một cách trực quan.
