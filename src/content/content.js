@@ -1540,8 +1540,14 @@
     const paraInfos = [];
     let searchFrom = 0;
     for (const p of paraNodes) {
-      const pText = (p.innerText || '').trim();
+      let pText = (p.innerText || '').trim();
       if (!pText) continue;
+
+      // Apply the same normalization as fetchContent to match currentText
+      pText = pText.replace(/\.{5,}/g, '...');
+      pText = pText.replace(/-{5,}/g, '---');
+      pText = pText.replace(/_{5,}/g, '___');
+
       const searchStr = pText.slice(0, Math.min(60, pText.length));
       const idx = currentText.indexOf(searchStr, searchFrom);
       if (idx < 0) continue;
