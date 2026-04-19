@@ -983,6 +983,31 @@
 
     const progressWrap = document.createElement('div');
     progressWrap.id = 'sts-progress-container';
+    progressWrap.title = 'Nhấn để chọn thời điểm nghe';
+    
+    // Add seek capability
+    progressWrap.addEventListener('click', (e) => {
+      // Only allow seeking if using Gemini, total chunks is known, and not downloading
+      if (ttsSettings.engine !== 'gemini' || geminiTotalChunks <= 0 || isDownloadingAudio) return;
+      
+      const rect = progressWrap.getBoundingClientRect();
+      const clickX = Math.max(0, e.clientX - rect.left);
+      const pct = clickX / rect.width;
+      let targetChunk = Math.floor(pct * geminiTotalChunks);
+      if (targetChunk >= geminiTotalChunks) targetChunk = geminiTotalChunks - 1;
+      if (targetChunk < 0) targetChunk = 0;
+
+      // Stop current playback (clears queue, etc.)
+      stopGeminiPlayback();
+      
+      // Provide immediate visual feedback
+      const newPct = Math.round(((targetChunk) / geminiTotalChunks) * 100);
+      updateProgressBar(newPct);
+      
+      // Restart speech from the clicked chunk
+      startSpeech(targetChunk);
+    });
+
     const progressBar = document.createElement('div');
     progressBar.id = 'sts-progress-bar';
     progressWrap.appendChild(progressBar);
