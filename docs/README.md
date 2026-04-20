@@ -13,7 +13,6 @@
   - **Settings Popup**: Phần cài đặt được tổ chức khoa học dưới dạng **3 Tab** (Giọng đọc, Nhạc nền, Chung) với hiệu ứng modal chuyên nghiệp (mở bằng nút ⚙). Chiều cao modal được cố định giúp thao tác mượt mà.
   - Hỗ trợ đổi giao diện **Sáng/Tối** (hoặc tự động theo hệ thống).
   - **Wave Visualizer**: Hiệu ứng sóng âm động tương ứng với giọng đọc (chỉ dành cho Gemini).
-  - **Highlight Karaoke**: Tự động cuộn trang và tô sáng đoạn văn bản đang đọc theo thời gian thực (chỉ dành cho Gemini).
   - Thanh tiến trình trực quan hiển thị phần trăm khi tạo audio từ AI.
 - **Tính năng điều khiển đầy đủ**: Phát (Play), Tạm dừng (Pause), Tiếp tục (Resume), Dừng (Stop) và Tải lại chương (Reload).
 - **Lưu cấu hình theo truyện**: Tự động nhớ giọng đọc và tốc độ riêng cho từng bộ truyện khác nhau.

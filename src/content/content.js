@@ -28,10 +28,6 @@
   let isDownloadingAudio = false;
   let downloadChunks = [];  // stores { audioData: base64, chunkIndex } during download
 
-  // Karaoke Highlight state
-  let chunkNodeMap = [];   // [chunkIndex] → [Array<Element>] DOM nodes for that chunk
-  let highlightedEls = []; // currently highlighted elements
-
   // Sleep Timer state
   let sleepTimerId = null;
   let sleepCountdownId = null;
@@ -56,7 +52,6 @@
     theme: 'system',
     isMiniMode: false,
     autoNextChapter: false,
-    karaokeEnabled: true,
     bgMusic: {
       enabled: false,
       track: 'rain',
@@ -160,7 +155,6 @@
         ttsSettings.engine = result.ttsSettings.engine || ttsSettings.engine;
         ttsSettings.geminiVoice = result.ttsSettings.geminiVoice || ttsSettings.geminiVoice;
         ttsSettings.autoNextChapter = result.ttsSettings.autoNextChapter ?? ttsSettings.autoNextChapter;
-        ttsSettings.karaokeEnabled = result.ttsSettings.karaokeEnabled ?? ttsSettings.karaokeEnabled;
 
         // Load background music settings
         if (result.ttsSettings.bgMusic) {
@@ -207,7 +201,6 @@
         theme: ttsSettings.theme,
         isMiniMode: ttsSettings.isMiniMode,
         autoNextChapter: ttsSettings.autoNextChapter,
-        karaokeEnabled: ttsSettings.karaokeEnabled,
         bgMusic: ttsSettings.bgMusic,
         // Legacy fallbacks
         rate: ttsSettings.rate,
@@ -462,9 +455,6 @@
           els.status.textContent = `Đang đọc phần ${geminiPlayedChunks}/${geminiTotalChunks}...`;
         }
 
-        // Highlight the corresponding paragraph block in karaoke mode
-        highlightChunk(chunk.chunkIndex);
-
         await playBase64Pcm(chunk.audioData);
         saveReadingProgress(geminiPlayedChunks, geminiTotalChunks);
       } else if (geminiAllChunksReceived) {
@@ -475,7 +465,6 @@
     }
 
     isPlayingGemini = false;
-    clearKaraokeHighlight();
     stopVisualizer();
 
     if (!geminiStopped && ttsSettings.engine === 'gemini') {
@@ -640,7 +629,6 @@
     isPaused = false;
     hideProgressBar();
     stopVisualizer();
-    clearKaraokeHighlight();
     if (autoNextTimerId) {
       clearInterval(autoNextTimerId);
       autoNextTimerId = null;
@@ -1491,28 +1479,6 @@
     nextChapRow.append(nextChapLabel, nextChapLabelWrap);
     generalPanel.appendChild(nextChapRow);
 
-    // Karaoke Highlight
-    const karaokeRow = document.createElement('div');
-    karaokeRow.className = 'sts-setting-row sts-row-inline';
-    const karaokeLabel = document.createElement('div');
-    karaokeLabel.className = 'sts-setting-label';
-    karaokeLabel.textContent = 'Highlight Karaoke (Gemini)';
-    const karaokeLabelWrap = document.createElement('label');
-    karaokeLabelWrap.className = 'sts-toggle-wrap';
-    const karaokeInput = document.createElement('input');
-    karaokeInput.type = 'checkbox';
-    karaokeInput.checked = !!ttsSettings.karaokeEnabled;
-    const karaokeSliderEl = document.createElement('span');
-    karaokeSliderEl.className = 'sts-toggle-slider';
-    karaokeInput.addEventListener('change', () => {
-      ttsSettings.karaokeEnabled = karaokeInput.checked;
-      saveSettings();
-      if (!karaokeInput.checked) clearKaraokeHighlight();
-    });
-    karaokeLabelWrap.append(karaokeInput, karaokeSliderEl);
-    karaokeRow.append(karaokeLabel, karaokeLabelWrap);
-    generalPanel.appendChild(karaokeRow);
-
     // Activate first tab
     switchTab('voice');
 
@@ -1539,91 +1505,6 @@
     });
     row.appendChild(slider);
     return row;
-  }
-
-  // ---- Karaoke Text Highlight ----
-
-  /**
-   * Builds a map from chunkIndex → array of DOM elements that contain that chunk's text.
-   * Uses the same split algorithm as background.js to ensure alignment.
-   */
-  function buildChunkNodeMap(chapterEl) {
-    chunkNodeMap = [];
-    if (!currentText) return;
-
-    // Collect paragraph-like block elements
-    let paraNodes = Array.from(chapterEl.querySelectorAll('p'));
-    if (paraNodes.length < 2) {
-      // Fallback: direct children that have visible text
-      paraNodes = Array.from(chapterEl.children).filter(
-        el => (el.innerText || '').trim().length > 0
-      );
-    }
-    if (paraNodes.length === 0) return; // No structure found, skip
-
-    // Map each paragraph to its approximate char range within currentText
-    const paraInfos = [];
-    let searchFrom = 0;
-    for (const p of paraNodes) {
-      let pText = (p.innerText || '').trim();
-      if (!pText) continue;
-
-      // Apply the same normalization as fetchContent to match currentText
-      pText = pText.replace(/\.{5,}/g, '...');
-      pText = pText.replace(/-{5,}/g, '---');
-      pText = pText.replace(/_{5,}/g, '___');
-
-      const searchStr = pText.slice(0, Math.min(60, pText.length));
-      const idx = currentText.indexOf(searchStr, searchFrom);
-      if (idx < 0) continue;
-      paraInfos.push({ el: p, start: idx, end: idx + pText.length });
-      searchFrom = idx + 1;
-    }
-    if (paraInfos.length === 0) return;
-
-    // Replicate background.js chunk splitting (CHUNK_SIZE = 2500) to get boundaries
-    const CSIZE = 2500;
-    const boundaries = [];
-    let remaining = currentText;
-    let offset = 0;
-    while (remaining.length > 0) {
-      if (remaining.length <= CSIZE) {
-        boundaries.push({ start: offset, end: offset + remaining.length });
-        break;
-      }
-      let splitAt = remaining.lastIndexOf('\n', CSIZE);
-      if (splitAt < CSIZE * 0.5) splitAt = remaining.lastIndexOf('. ', CSIZE);
-      if (splitAt < CSIZE * 0.5) splitAt = remaining.lastIndexOf(' ', CSIZE);
-      if (splitAt < CSIZE * 0.3) splitAt = CSIZE;
-      boundaries.push({ start: offset, end: offset + splitAt + 1 });
-      const nextChunk = remaining.substring(splitAt + 1);
-      const trimmedChars = nextChunk.length - nextChunk.trimStart().length;
-      offset += splitAt + 1 + trimmedChars;
-      remaining = nextChunk.trimStart();
-    }
-
-    // Map each chunk to paragraph elements that overlap its text range
-    chunkNodeMap = boundaries.map(({ start, end }) =>
-      paraInfos.filter(p => p.end > start && p.start < end).map(p => p.el)
-    );
-  }
-
-  /** Highlights DOM elements for the given chunkIndex and scrolls to them. */
-  function highlightChunk(chunkIndex) {
-    clearKaraokeHighlight();
-    if (!ttsSettings.karaokeEnabled) return;
-    const nodes = chunkNodeMap[chunkIndex];
-    if (!nodes || nodes.length === 0) return;
-    highlightedEls = nodes;
-    highlightedEls.forEach(el => el.classList.add('sts-karaoke-highlight'));
-    // Smooth scroll to the first highlighted element
-    highlightedEls[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-
-  /** Removes all karaoke highlights from the page. */
-  function clearKaraokeHighlight() {
-    highlightedEls.forEach(el => el.classList.remove('sts-karaoke-highlight'));
-    highlightedEls = [];
   }
 
   // ---- Fetch Content ----
@@ -1667,9 +1548,6 @@
       const charCount = currentText.length;
       els.status.textContent = `Đã tải: ${charCount.toLocaleString()} ký tự.`;
       els.playBtn.disabled = false;
-
-      // Build karaoke chunk-to-node map for Gemini highlight
-      buildChunkNodeMap(chapterEl);
 
       // Check for reading progress
       const url = window.location.href.split('#')[0];
