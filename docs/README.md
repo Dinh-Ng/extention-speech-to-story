@@ -13,7 +13,7 @@
   - **Settings Popup**: Phần cài đặt được tổ chức khoa học dưới dạng **3 Tab** (Giọng đọc, Nhạc nền, Chung) với hiệu ứng modal chuyên nghiệp (mở bằng nút ⚙). Chiều cao modal được cố định giúp thao tác mượt mà.
   - Hỗ trợ đổi giao diện **Sáng/Tối** (hoặc tự động theo hệ thống).
   - **Wave Visualizer**: Hiệu ứng sóng âm động tương ứng với giọng đọc (chỉ dành cho Gemini).
-  - Thanh tiến trình trực quan hiển thị phần trăm khi tạo audio từ AI.
+  - **Thanh tiến trình tương tác (Seek)**: Cho phép click trên progress bar để tua nhanh/nghe lại đoạn bất kỳ.
 - **Tính năng điều khiển đầy đủ**: Phát (Play), Tạm dừng (Pause), Tiếp tục (Resume), Dừng (Stop) và Tải lại chương (Reload).
 - **Lưu cấu hình theo truyện**: Tự động nhớ giọng đọc và tốc độ riêng cho từng bộ truyện khác nhau.
 - **Phát nhạc nền (Ambient Sounds)**: Tích hợp các loại âm thanh môi trường như tiếng mưa, white noise, brown noise giúp tăng sự tập trung khi nghe truyện. Có hiệu ứng ducking (giảm âm lượng khi tạm dừng đọc) tạo trải nghiệm cao cấp.

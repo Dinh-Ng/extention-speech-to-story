@@ -17,6 +17,7 @@ Dưới đây là kế hoạch phát triển và những mục tiêu mở rộng
 | ⏳ Planned | **Phím tắt điều khiển (Keyboard Shortcuts)**: Alt + P, Alt + N để điều khiển nhanh. |
 | ✅ Complete | **Hẹn giờ tắt (Sleep Timer)**: Tự động dừng đọc sau 15, 30, 60 phút. |
 | ✅ Complete | **Tải Audio chương (Download Audio)**: Cho phép xuất audio ra file .wav để nghe offline. |
+| ✅ Complete | **Thanh tiến trình tương tác (Seek)**: Cho phép click trên progress bar để tua nhanh/nghe lại đoạn bất kỳ. |
 | ❌ Removed | **Highlight văn bản Karaoke**: Vừa đọc vừa highlight câu tương ứng trên trang. (Removed - do giới hạn kỹ thuật) |
 | ✅ Complete | **Lưu vị trí đọc (Save Reading Position)**: Nhớ chunk đang đọc để resume khi reload lại trang. |
 | ⏳ Planned | **Tối ưu khả năng đọc Offline**: Lưu bộ đệm âm thanh tải trước (preload buffer). |

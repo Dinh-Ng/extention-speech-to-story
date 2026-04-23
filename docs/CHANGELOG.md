@@ -2,7 +2,10 @@
 
 Tất cả các thay đổi quan trọng đối với dự án "Đọc truyện Speech" sẽ được ghi lại trong file này. Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [3.6.2] - 2026-04-21
+## [3.6.2] - 2026-04-23
+### Added
+- **Thanh tiến trình tương tác (Progress Bar Seek)**: Nâng cấp thanh tiến trình cho phép người dùng click vào bất kỳ vị trí nào để nhảy đến đoạn văn bản tương ứng (tương tự chức năng Tua nhanh). Tính năng giúp linh hoạt hơn trong việc nghe lại hoặc bỏ qua các đoạn nội dung.
+
 ### Removed
 - **Highlight văn bản Karaoke**: Gỡ bỏ tính năng Karaoke do giới hạn kỹ thuật (không thể đồng bộ chính xác giữa audio chunk và DOM nodes trên các trang web khác nhau).
 
