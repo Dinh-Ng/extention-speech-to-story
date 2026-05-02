@@ -2,6 +2,10 @@
 
 Tất cả các thay đổi quan trọng đối với dự án "Đọc truyện Speech" sẽ được ghi lại trong file này. Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [3.7.0] - 2026-05-02
+### Added
+- **Tự động cuộn trang (Auto-scroll)**: Tự động cuộn trang theo tiến độ đọc. Hệ thống tính toán vị trí văn bản dựa trên phần trăm chunk đã đọc và cuộn mượt để người dùng luôn thấy được đoạn đang được đọc. Tính năng có thể bật/tắt trong tab Cài đặt > Chung.
+
 ## [3.6.2] - 2026-04-23
 ### Added
 - **Thanh tiến trình tương tác (Progress Bar Seek)**: Nâng cấp thanh tiến trình cho phép người dùng click vào bất kỳ vị trí nào để nhảy đến đoạn văn bản tương ứng (tương tự chức năng Tua nhanh). Tính năng giúp linh hoạt hơn trong việc nghe lại hoặc bỏ qua các đoạn nội dung.

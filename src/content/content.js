@@ -52,6 +52,7 @@
     theme: 'system',
     isMiniMode: false,
     autoNextChapter: false,
+    autoScroll: true,
     bgMusic: {
       enabled: false,
       track: 'rain',
@@ -155,6 +156,7 @@
         ttsSettings.engine = result.ttsSettings.engine || ttsSettings.engine;
         ttsSettings.geminiVoice = result.ttsSettings.geminiVoice || ttsSettings.geminiVoice;
         ttsSettings.autoNextChapter = result.ttsSettings.autoNextChapter ?? ttsSettings.autoNextChapter;
+        ttsSettings.autoScroll = result.ttsSettings.autoScroll ?? ttsSettings.autoScroll;
 
         // Load background music settings
         if (result.ttsSettings.bgMusic) {
@@ -201,6 +203,7 @@
         theme: ttsSettings.theme,
         isMiniMode: ttsSettings.isMiniMode,
         autoNextChapter: ttsSettings.autoNextChapter,
+        autoScroll: ttsSettings.autoScroll,
         bgMusic: ttsSettings.bgMusic,
         // Legacy fallbacks
         rate: ttsSettings.rate,
@@ -457,6 +460,10 @@
 
         await playBase64Pcm(chunk.audioData);
         saveReadingProgress(geminiPlayedChunks, geminiTotalChunks);
+        // Auto-scroll: scroll page to match reading progress
+        if (ttsSettings.autoScroll) {
+          scrollToReadingProgress(geminiPlayedChunks, geminiTotalChunks);
+        }
       } else if (geminiAllChunksReceived) {
         break;
       } else {
@@ -501,6 +508,36 @@
         if (els) els.status.textContent = `Chuyển chương sau ${countdown}s...`;
       }
     }, 1000);
+  }
+
+  // ---- Auto-Scroll ----
+  /**
+   * Scrolls the page to the estimated reading position based on the current
+   * chunk index relative to total chunks. Calculates a proportional offset
+   * within the chapter's DOM element and smoothly scrolls there.
+   */
+  function scrollToReadingProgress(playedChunks, totalChunks) {
+    if (!totalChunks || totalChunks === 0) return;
+
+    // Find the chapter element on the live DOM (not the clone)
+    const parser = detectParser();
+    const selectors = parser ? parser.contentSelectors : ['#chapter-c'];
+    let chapterEl = null;
+    for (const sel of selectors) {
+      chapterEl = document.querySelector(sel);
+      if (chapterEl) break;
+    }
+    if (!chapterEl) return;
+
+    const pct = playedChunks / totalChunks;
+    const rect = chapterEl.getBoundingClientRect();
+    const chapterTop = rect.top + window.scrollY;
+    const chapterHeight = chapterEl.scrollHeight;
+
+    // Target Y = top of chapter + (progress% * height) - 40% of viewport (center-ish)
+    const targetY = chapterTop + (pct * chapterHeight) - (window.innerHeight * 0.4);
+
+    window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
   }
 
   // ---- Download Audio Logic ----
@@ -1478,6 +1515,27 @@
     nextChapLabelWrap.append(nextChapInput, nextChapSliderEl);
     nextChapRow.append(nextChapLabel, nextChapLabelWrap);
     generalPanel.appendChild(nextChapRow);
+
+    // Auto-scroll
+    const autoScrollRow = document.createElement('div');
+    autoScrollRow.className = 'sts-setting-row sts-row-inline';
+    const autoScrollLabel = document.createElement('div');
+    autoScrollLabel.className = 'sts-setting-label';
+    autoScrollLabel.textContent = 'Tự động cuộn trang';
+    const autoScrollLabelWrap = document.createElement('label');
+    autoScrollLabelWrap.className = 'sts-toggle-wrap';
+    const autoScrollInput = document.createElement('input');
+    autoScrollInput.type = 'checkbox';
+    autoScrollInput.checked = ttsSettings.autoScroll !== false; // default true
+    const autoScrollSliderEl = document.createElement('span');
+    autoScrollSliderEl.className = 'sts-toggle-slider';
+    autoScrollInput.addEventListener('change', () => {
+      ttsSettings.autoScroll = autoScrollInput.checked;
+      saveSettings();
+    });
+    autoScrollLabelWrap.append(autoScrollInput, autoScrollSliderEl);
+    autoScrollRow.append(autoScrollLabel, autoScrollLabelWrap);
+    generalPanel.appendChild(autoScrollRow);
 
     // Activate first tab
     switchTab('voice');
