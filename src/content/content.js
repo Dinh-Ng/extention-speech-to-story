@@ -24,6 +24,10 @@
   let geminiPlayedChunks = 0;
   let animationFrameId = null;
 
+  // Subtitle Popup state
+  let subtitlePopup = null;
+  let subtitleTextEl = null;
+
   // Download Audio state
   let isDownloadingAudio = false;
   let downloadChunks = [];  // stores { audioData: base64, chunkIndex } during download
@@ -53,6 +57,7 @@
     isMiniMode: false,
     autoNextChapter: false,
     autoScroll: true,
+    subtitleEnabled: true,
     bgMusic: {
       enabled: false,
       track: 'rain',
@@ -157,6 +162,7 @@
         ttsSettings.geminiVoice = result.ttsSettings.geminiVoice || ttsSettings.geminiVoice;
         ttsSettings.autoNextChapter = result.ttsSettings.autoNextChapter ?? ttsSettings.autoNextChapter;
         ttsSettings.autoScroll = result.ttsSettings.autoScroll ?? ttsSettings.autoScroll;
+        ttsSettings.subtitleEnabled = result.ttsSettings.subtitleEnabled ?? ttsSettings.subtitleEnabled;
 
         // Load background music settings
         if (result.ttsSettings.bgMusic) {
@@ -204,6 +210,7 @@
         isMiniMode: ttsSettings.isMiniMode,
         autoNextChapter: ttsSettings.autoNextChapter,
         autoScroll: ttsSettings.autoScroll,
+        subtitleEnabled: ttsSettings.subtitleEnabled,
         bgMusic: ttsSettings.bgMusic,
         // Legacy fallbacks
         rate: ttsSettings.rate,
@@ -464,6 +471,10 @@
         if (ttsSettings.autoScroll) {
           scrollToReadingProgress(geminiPlayedChunks, geminiTotalChunks);
         }
+        // Subtitle Update
+        if (chunk.chunkText) {
+          updateSubtitle(chunk.chunkText);
+        }
       } else if (geminiAllChunksReceived) {
         break;
       } else {
@@ -479,6 +490,7 @@
       isSpeaking = false;
       isPaused = false;
       clearReadingProgress(); // Clear when finished naturally
+      hideSubtitle();
       if (els) {
         updateButtons(els);
         updateProgressBar(100);
@@ -538,6 +550,21 @@
     const targetY = chapterTop + (pct * chapterHeight) - (window.innerHeight * 0.4);
 
     window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+  }
+
+  // ---- Subtitle / Mini-reader ----
+  function updateSubtitle(text) {
+    if (!ttsSettings.subtitleEnabled || !subtitlePopup || !subtitleTextEl) return;
+    subtitleTextEl.textContent = text;
+    subtitlePopup.style.display = 'block';
+    // Reset scroll position when new text arrives
+    subtitlePopup.scrollTop = 0;
+  }
+
+  function hideSubtitle() {
+    if (subtitlePopup) {
+      subtitlePopup.style.display = 'none';
+    }
   }
 
   // ---- Download Audio Logic ----
@@ -651,6 +678,7 @@
     geminiStopped = true;
     audioQueue = [];
     geminiAllChunksReceived = true;
+    hideSubtitle();
     if (currentSource) {
       try {
         if (typeof currentSource.stop === 'function') {
@@ -1108,8 +1136,53 @@
 
     errorPopup.append(errorMsg, errorCloseBtn);
 
+    // Subtitle Popup
+    subtitlePopup = document.createElement('div');
+    subtitlePopup.id = 'sts-subtitle-popup';
+    subtitlePopup.className = 'sts-subtitle-popup';
+    subtitlePopup.style.display = 'none'; // hidden by default
+    
+    // Subtitle drag handle (the whole popup can be dragged)
+    let isDraggingSub = false;
+    let subOffsetX = 0, subOffsetY = 0;
+
+    subtitlePopup.addEventListener('mousedown', (e) => {
+      // Don't drag if clicking the scrollbar
+      if (e.offsetX > subtitlePopup.clientWidth) return;
+      isDraggingSub = true;
+      const rect = subtitlePopup.getBoundingClientRect();
+      subOffsetX = e.clientX - rect.left;
+      subOffsetY = e.clientY - rect.top;
+      subtitlePopup.style.cursor = 'grabbing';
+      subtitlePopup.style.transition = 'none'; // disable transition while dragging
+    });
+    document.addEventListener('mousemove', (e) => {
+      if (!isDraggingSub) return;
+      let newX = e.clientX - subOffsetX;
+      let newY = e.clientY - subOffsetY;
+      
+      // Keep within viewport
+      newX = Math.max(0, Math.min(window.innerWidth - subtitlePopup.offsetWidth, newX));
+      newY = Math.max(0, Math.min(window.innerHeight - subtitlePopup.offsetHeight, newY));
+
+      subtitlePopup.style.left = newX + 'px';
+      subtitlePopup.style.top = newY + 'px';
+      subtitlePopup.style.bottom = 'auto';
+      subtitlePopup.style.transform = 'none';
+    });
+    document.addEventListener('mouseup', () => {
+      if (isDraggingSub) {
+        isDraggingSub = false;
+        subtitlePopup.style.cursor = 'grab';
+      }
+    });
+
+    subtitleTextEl = document.createElement('div');
+    subtitleTextEl.className = 'sts-subtitle-text';
+    subtitlePopup.appendChild(subtitleTextEl);
+
     card.append(header, controlsSection, resumeBanner, errorPopup);
-    container.append(card, settingsOverlay);
+    container.append(card, settingsOverlay, subtitlePopup);
     document.body.appendChild(container);
 
     // Return elements reference
@@ -1536,6 +1609,30 @@
     autoScrollLabelWrap.append(autoScrollInput, autoScrollSliderEl);
     autoScrollRow.append(autoScrollLabel, autoScrollLabelWrap);
     generalPanel.appendChild(autoScrollRow);
+
+    // Subtitle / Mini-reader
+    const subtitleRow = document.createElement('div');
+    subtitleRow.className = 'sts-setting-row sts-row-inline';
+    const subtitleLabel = document.createElement('div');
+    subtitleLabel.className = 'sts-setting-label';
+    subtitleLabel.textContent = 'Phụ đề / Mini-reader';
+    const subtitleLabelWrap = document.createElement('label');
+    subtitleLabelWrap.className = 'sts-toggle-wrap';
+    const subtitleInput = document.createElement('input');
+    subtitleInput.type = 'checkbox';
+    subtitleInput.checked = ttsSettings.subtitleEnabled !== false; // default true
+    const subtitleSliderEl = document.createElement('span');
+    subtitleSliderEl.className = 'sts-toggle-slider';
+    subtitleInput.addEventListener('change', () => {
+      ttsSettings.subtitleEnabled = subtitleInput.checked;
+      saveSettings();
+      if (!ttsSettings.subtitleEnabled) {
+        hideSubtitle();
+      }
+    });
+    subtitleLabelWrap.append(subtitleInput, subtitleSliderEl);
+    subtitleRow.append(subtitleLabel, subtitleLabelWrap);
+    generalPanel.appendChild(subtitleRow);
 
     // Activate first tab
     switchTab('voice');

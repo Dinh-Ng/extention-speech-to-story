@@ -88,6 +88,7 @@ async function geminiTtsSpeak(text, apiKeys, activeKeyIndex, voiceName, tabId, s
       action: 'gemini-audio-chunk',
       audioData: audioBase64,
       chunkIndex: i,
+      chunkText: chunks[i],
       totalChunks: chunks.length,
       isLast: i === chunks.length - 1
     }).catch(() => {});

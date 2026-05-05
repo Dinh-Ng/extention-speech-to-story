@@ -19,6 +19,7 @@ Dưới đây là kế hoạch phát triển và những mục tiêu mở rộng
 | ✅ Complete | **Tải Audio chương (Download Audio)**: Cho phép xuất audio ra file .wav để nghe offline. |
 | ✅ Complete | **Thanh tiến trình tương tác (Seek)**: Cho phép click trên progress bar để tua nhanh/nghe lại đoạn bất kỳ. |
 | ❌ Removed | **Highlight văn bản Karaoke**: Vừa đọc vừa highlight câu tương ứng trên trang. (Removed - do giới hạn kỹ thuật) |
+| ✅ Complete | **Popup Phụ đề (Mini-reader)**: Khung phụ đề nổi có thể kéo thả thay thế cho tính năng Karaoke. |
 | ✅ Complete | **Lưu vị trí đọc (Save Reading Position)**: Nhớ chunk đang đọc để resume khi reload lại trang. |
 | ⏳ Planned | **Tối ưu khả năng đọc Offline**: Lưu bộ đệm âm thanh tải trước (preload buffer). |
 | ✅ Complete | **Tái cấu trúc UI Settings**: Tách cài đặt thành popup riêng biệt với hiệu ứng modal. |

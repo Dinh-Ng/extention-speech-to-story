@@ -2,6 +2,10 @@
 
 Tất cả các thay đổi quan trọng đối với dự án "Đọc truyện Speech" sẽ được ghi lại trong file này. Định dạng dựa trên [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [3.8.0] - 2026-05-06
+### Added
+- **Popup Phụ đề (Mini-reader)**: Thay thế cho tính năng Karaoke cũ. Hiển thị một khung chứa toàn bộ văn bản của đoạn đang được đọc. Popup được thiết kế dạng Glassmorphism, có thể kéo thả tự do trên màn hình để không che khuất nội dung trang web. Có thể bật/tắt trong phần Cài đặt > Chung.
+
 ## [3.7.0] - 2026-05-02
 ### Added
 - **Tự động cuộn trang (Auto-scroll)**: Tự động cuộn trang theo tiến độ đọc. Hệ thống tính toán vị trí văn bản dựa trên phần trăm chunk đã đọc và cuộn mượt để người dùng luôn thấy được đoạn đang được đọc. Tính năng có thể bật/tắt trong tab Cài đặt > Chung.

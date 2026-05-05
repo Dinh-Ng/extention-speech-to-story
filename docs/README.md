@@ -14,6 +14,7 @@
   - Hỗ trợ đổi giao diện **Sáng/Tối** (hoặc tự động theo hệ thống).
   - **Wave Visualizer**: Hiệu ứng sóng âm động tương ứng với giọng đọc (chỉ dành cho Gemini).
   - **Thanh tiến trình tương tác (Seek)**: Cho phép click trên progress bar để tua nhanh/nghe lại đoạn bất kỳ.
+  - **Popup Phụ đề (Mini-reader)**: Khung phụ đề nổi hiển thị văn bản đang đọc (hỗ trợ kéo thả).
 - **Tính năng điều khiển đầy đủ**: Phát (Play), Tạm dừng (Pause), Tiếp tục (Resume), Dừng (Stop) và Tải lại chương (Reload).
 - **Lưu cấu hình theo truyện**: Tự động nhớ giọng đọc và tốc độ riêng cho từng bộ truyện khác nhau.
 - **Phát nhạc nền (Ambient Sounds)**: Tích hợp các loại âm thanh môi trường như tiếng mưa, white noise, brown noise giúp tăng sự tập trung khi nghe truyện. Có hiệu ứng ducking (giảm âm lượng khi tạm dừng đọc) tạo trải nghiệm cao cấp.
@@ -22,6 +23,7 @@
 - **Quản lý đa dạng Gemini API Key**: Hỗ trợ lưu nhiều API key cùng lúc. Tự động chuyển đổi sang key dự phòng khi gặp lỗi Quota (429) hoặc lỗi server (500/503).
 - **Hẹn giờ tắt (Sleep Timer)**: Tự động dừng phát sau 15, 30 hoặc 60 phút với bộ đếm ngược thời gian thực.
 - **Tải xuống Audio (Download)**: Cho phép xuất audio toàn bộ chương đã trích xuất thành file `.wav` để nghe offline (Chỉ hỗ trợ cho Gemini engine).
+- **Tự động cuộn trang (Auto-scroll)**: Tự động cuộn trang mượt mà theo tiến độ đọc phần trăm của audio.
 - **Tự động chuyển chương (Auto-Next Chapter)**: Tự động nhảy sang chương tiếp theo sau 5 giây khi đọc xong chương hiện tại.
 - **Lưu vị trí đọc (Save Reading Position)**: Ghi nhớ phần (chunk) đang đọc dở của Gemini TTS. Khi quay lại trang, extension sẽ hỏi bạn có muốn đọc tiếp từ vị trí cũ hay không.
 - **Hỗ trợ đa nền tảng**: Kiến trúc parser linh hoạt cho phép hỗ trợ nhiều trang web truyện khác nhau (hiện đã hỗ trợ Truyenfull và TangThuVien).
