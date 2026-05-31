@@ -104,6 +104,12 @@
   // Returns the parser config for the current hostname, or null if unsupported
   function detectParser() {
     const hostname = window.location.hostname.replace(/^www\./, '');
+    
+    // Match any truyenfull.*** domain or subdomains (e.g. truyenfull.vision, truyenfull.today, m.truyenfull.com)
+    if (/(^|\.)truyenfull\.[a-z]+$/.test(hostname)) {
+      return SITE_PARSERS['truyenfull.vision'];
+    }
+    
     return SITE_PARSERS[hostname] || null;
   }
 

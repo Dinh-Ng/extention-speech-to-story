@@ -20,9 +20,15 @@ async function fetchContent() {
       return;
     }
 
-    // Kiểm tra URL có phải truyenfull.vision không
-    if (!tab.url.includes('truyenfull.vision')) {
-      contentDiv.innerText = "Vui lòng mở một trang truyenfull.vision.";
+    // Kiểm tra URL có thuộc hệ thống truyenfull hoặc tangthuvien không
+    const urlObj = new URL(tab.url);
+    const hostname = urlObj.hostname.replace(/^www\./, '');
+    
+    const isTruyenFull = /(^|\.)truyenfull\.[a-z]+$/.test(hostname);
+    const isTangThuVien = /(^|\.)tangthuvien\.net$/.test(hostname);
+
+    if (!isTruyenFull && !isTangThuVien) {
+      contentDiv.innerText = "Vui lòng mở một trang truyện Truyenfull hoặc TangThuVien.";
       return;
     }
 

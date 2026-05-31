@@ -11,7 +11,15 @@
   ],
   "host_permissions": [
     "https://truyenfull.vision/*",
+    "https://*.truyenfull.vision/*",
+    "https://truyenfull.today/*",
+    "https://*.truyenfull.today/*",
+    "https://truyenfull.com/*",
+    "https://*.truyenfull.com/*",
+    "https://truyenfull.vn/*",
+    "https://*.truyenfull.vn/*",
     "https://tangthuvien.net/*",
+    "https://*.tangthuvien.net/*",
     "https://generativelanguage.googleapis.com/*"
   ],
   "background": {
@@ -29,7 +37,15 @@
     {
       "matches": [
         "https://truyenfull.vision/*",
-        "https://tangthuvien.net/*"
+        "https://*.truyenfull.vision/*",
+        "https://truyenfull.today/*",
+        "https://*.truyenfull.today/*",
+        "https://truyenfull.com/*",
+        "https://*.truyenfull.com/*",
+        "https://truyenfull.vn/*",
+        "https://*.truyenfull.vn/*",
+        "https://tangthuvien.net/*",
+        "https://*.tangthuvien.net/*"
       ],
       "js": ["src/content/content.js"],
       "css": ["assets/styles/content.css"]
